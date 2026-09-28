@@ -227,26 +227,35 @@ def test_all_loop_states_are_declared() -> None:
 # --------------------------------------------------------------------------
 
 
-def test_finding_requires_evidence_or_searched_sources() -> None:
+def test_finding_requires_both_evidence_and_searched_sources() -> None:
     with pytest.raises(ValidationError):
         Finding(
             finding_id="FND-001",
             patient_id="P-1001",
             finding_type=FindingType.RESULT_WITHOUT_ACKNOWLEDGEMENT,
             claim="Positive blood culture was never acknowledged.",
+            searched_sources=["LABS", "NOTES"],
         )
 
+    with pytest.raises(ValidationError):
+        Finding(
+            finding_id="FND-002",
+            patient_id="P-1001",
+            finding_type=FindingType.PLAN_WITHOUT_ORDER,
+            claim="No order was found for the documented plan.",
+            supporting_evidence=["EVD-001"],
+        )
 
-def test_finding_records_what_was_searched_even_without_evidence() -> None:
     finding = Finding(
-        finding_id="FND-002",
+        finding_id="FND-003",
         patient_id="P-1001",
         finding_type=FindingType.PLAN_WITHOUT_ORDER,
         claim="No order was found for the documented plan.",
+        supporting_evidence=["EVD-001"],
         searched_sources=["ORDERS", "NOTES", "PROGRESS_NOTES"],
     )
+    assert finding.supporting_evidence == ["EVD-001"]
     assert finding.searched_sources == ["ORDERS", "NOTES", "PROGRESS_NOTES"]
-    assert finding.supporting_evidence == []
 
 
 def test_finding_type_taxonomy_has_at_least_four_gap_classes() -> None:
@@ -302,6 +311,16 @@ def test_accept_does_not_require_a_reason() -> None:
         reviewer=make_actor(),
     )
     assert decision.action is ReviewAction.ACCEPT
+
+
+def test_edit_requires_a_reason() -> None:
+    with pytest.raises(ValidationError):
+        ReviewDecision(
+            decision_id="DEC-003",
+            finding_id="FND-001",
+            action=ReviewAction.EDIT,
+            reviewer=make_actor(),
+        )
 
 
 def test_handoff_draft_is_editable_and_unsealed() -> None:

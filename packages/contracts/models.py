@@ -235,8 +235,9 @@ class OpenLoop(StrictModel):
 class Finding(StrictModel):
     """A workflow gap detected by the Agent and bound to evidence.
 
-    ``searched_sources`` is mandatory so that "not found in the records
-    we searched" is never presented as "does not exist".
+    Both evidence and searched sources are mandatory so that every claim is
+    traceable and "not found in the records we searched" is never presented
+    as "does not exist".
     """
 
     finding_id: NonEmptyStr
@@ -254,13 +255,16 @@ class Finding(StrictModel):
     detected_at: AwareDatetime = Field(default_factory=utcnow)
 
     @model_validator(mode="after")
-    def _evidence_backed_or_explicitly_unsupported(self) -> Finding:
-        # A finding with no supporting evidence is allowed ONLY when it
-        # records exactly what was searched (an explicit "gap in coverage").
-        if not self.supporting_evidence and not self.searched_sources:
+    def _evidence_backed_and_search_scoped(self) -> Finding:
+        if not self.supporting_evidence or not self.searched_sources:
+            missing = []
+            if not self.supporting_evidence:
+                missing.append("supporting_evidence")
+            if not self.searched_sources:
+                missing.append("searched_sources")
             raise ValueError(
-                "a Finding must carry supporting_evidence or searched_sources; "
-                "unbacked claims are not permitted"
+                "a Finding must carry both supporting_evidence and "
+                f"searched_sources; missing {', '.join(missing)}"
             )
         return self
 
@@ -328,8 +332,8 @@ class ReviewDecision(StrictModel):
     decided_at: AwareDatetime = Field(default_factory=utcnow)
 
     @model_validator(mode="after")
-    def _reject_and_modify_require_reason(self) -> ReviewDecision:
-        if self.action in {ReviewAction.REJECT, ReviewAction.MODIFY}:
+    def _reject_and_edit_require_reason(self) -> ReviewDecision:
+        if self.action in {ReviewAction.REJECT, ReviewAction.EDIT}:
             if not self.reason or not self.reason.strip():
                 raise ValueError(f"{self.action} requires a non-empty reason")
         return self

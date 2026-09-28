@@ -49,3 +49,7 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# --- Local agent/tool state ---
+.workbuddy/
+uv.lock

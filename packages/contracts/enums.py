@@ -124,7 +124,7 @@ class ReviewAction(StrEnum):
 
     ACCEPT = "ACCEPT"
     REJECT = "REJECT"
-    MODIFY = "MODIFY"
+    EDIT = "EDIT"
 
 
 class HandoffStatus(StrEnum):
