@@ -1,0 +1,22 @@
+{
+  "name": "clinloop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ClinLoop monorepo root — aggregates frontend workspace scripts.",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "web:dev": "npm --prefix apps/web run dev",
+    "web:build": "npm --prefix apps/web run build",
+    "web:test": "npm --prefix apps/web run test -- --run",
+    "web:lint": "npm --prefix apps/web run lint",
+    "web:format-check": "npm --prefix apps/web run format:check",
+    "test": "npm run web:test",
+    "lint": "npm run web:lint",
+    "format-check": "npm run web:format-check"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

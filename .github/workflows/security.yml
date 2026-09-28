@@ -1,0 +1,67 @@
+name: Security
+
+on:
+  push:
+    branches: ["foundation", "feat/**", "fix/**", "integration/**", "main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  forbidden-artifacts:
+    name: Forbidden artifacts and data check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject committed secrets, env files and DB volumes
+        run: |
+          set -euo pipefail
+          fail=0
+
+          # Tracked .env files (the template is allowed)
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$'; then
+            echo "::error::A real .env file is tracked. Remove it and rotate the credentials."
+            fail=1
+          fi
+
+          # Common credential material
+          if git ls-files | grep -E '\.(pem|key|p12|jks)$'; then
+            echo "::error::Key material is tracked."
+            fail=1
+          fi
+
+          # Database volumes / local dumps
+          if git ls-files | grep -E '(postgres-data|redis-data)/|\.sqlite3$|\.dump$'; then
+            echo "::error::A database volume or dump is tracked."
+            fail=1
+          fi
+
+          exit $fail
+
+      - name: Reject real-looking patient identifiers in fixtures
+        run: |
+          set -euo pipefail
+          # Fixtures must use synthetic IDs (P-100*/CASE-*/LAB-*/ENC-*).
+          if git grep -nIE '\b[0-9]{11}\b' -- 'packages/fixtures' 'tests' 2>/dev/null; then
+            echo "::error::An 11-digit identifier (possible MRN/CPF/ID) appears in fixtures."
+            exit 1
+          fi
+          echo "No real-world identifiers detected in fixtures."

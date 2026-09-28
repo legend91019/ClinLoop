@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: ["foundation", "feat/**", "fix/**", "integration/**", "main"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (pytest + ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . --group dev
+
+      - name: Ruff lint
+        run: python -m ruff check .
+
+      - name: Ruff format check
+        run: python -m ruff format --check .
+
+      - name: Run tests
+        run: python -m pytest -q
+
+  frontend:
+    # Skipped during the foundation phase; auto-enables once Task 9 lands the web app.
+    if: hashFiles('apps/web/package.json') != ''
+    name: Frontend (build + test + lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm --prefix apps/web ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm --prefix apps/web run lint
+
+      - name: Format check
+        run: npm --prefix apps/web run format:check
+
+      - name: Unit tests
+        run: npm --prefix apps/web run test -- --run
+
+      - name: Build
+        run: npm --prefix apps/web run build

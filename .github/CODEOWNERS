@@ -1,0 +1,33 @@
+# ClinLoop code owners.
+# Every change needs review from the owning path's owner(s); the maintainer
+# approves and squash-merges all PRs into `main`.
+
+# Default owner — fallback for anything not matched below.
+*                       @legend91019
+
+# Repository governance and CI.
+/.github/               @legend91019
+/pyproject.toml         @legend91019
+/package.json           @legend91019
+/docker-compose.yml     @legend91019
+/Makefile               @legend91019
+
+# Frozen public contracts — changes here ripple into both主体分支.
+/packages/contracts/    @legend91019
+/packages/domain/       @legend91019
+
+# Foundation surfaces.
+/apps/api/              @legend91019
+/packages/fixtures/     @legend91019
+/infra/                 @legend91019
+
+# Agent runtime and MCP — owned by teammate A.
+/apps/worker/           @legend91019
+/apps/mcp_server/       @legend91019
+
+# Doctor console and evaluation — owned by teammate B.
+/apps/web/              @legend91019
+/eval/                  @legend91019
+
+# Design and plan documents.
+/docs/                  @legend91019

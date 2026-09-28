@@ -1,0 +1,61 @@
+# ClinLoop local development stack.
+# Synthetic data only — never mount real patient data into these volumes.
+
+name: clinloop
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: clinloop-postgres
+    environment:
+      POSTGRES_USER: clinloop
+      POSTGRES_PASSWORD: clinloop
+      POSTGRES_DB: clinloop
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinloop -d clinloop"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    container_name: clinloop-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  api:
+    image: python:3.12-slim
+    container_name: clinloop-api
+    profiles: ["full"]
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir -e . &&
+             uvicorn apps.api.app.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://clinloop:clinloop@postgres:5432/clinloop
+      REDIS_URL: redis://redis:6379/0
+      API_PORT: "8000"
+      AGENT_PROVIDER: mock
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

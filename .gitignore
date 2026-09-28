@@ -1,0 +1,51 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+.tox/
+
+# --- Node / frontend ---
+node_modules/
+.pnpm-store/
+apps/web/dist/
+apps/web/.vite/
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
+
+# --- Secrets & environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Local data volumes (never commit patient data or DB volumes) ---
+postgres-data/
+redis-data/
+*.sqlite3
+*.db
+
+# --- Artifacts ---
+artifacts/
+dist/
+
+# --- Editors / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
