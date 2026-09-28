@@ -37,9 +37,27 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
+  detect-frontend:
+    name: Detect frontend
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.detect.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        name: Check frontend manifest
+        shell: bash
+        run: |
+          if [[ -f apps/web/package.json ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
   frontend:
     # Skipped during the foundation phase; auto-enables once Task 9 lands the web app.
-    if: hashFiles('apps/web/package.json') != ''
+    needs: detect-frontend
+    if: needs.detect-frontend.outputs.enabled == 'true'
     name: Frontend (build + test + lint)
     runs-on: ubuntu-latest
     steps:
