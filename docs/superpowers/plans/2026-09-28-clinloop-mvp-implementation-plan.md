@@ -71,7 +71,14 @@ AGENT_TIMEOUT_SECONDS=30
 - [ ] 创建 pyproject.toml，固定 Python >=3.12，依赖 FastAPI、Pydantic、SQLAlchemy、Alembic、Redis、psycopg、pytest、pytest-asyncio、httpx、uvicorn，并设置 pytest pythonpath=["."] 与 Ruff 规则 E/F/I/UP/B。
 - [ ] 创建 Docker Compose：PostgreSQL 16 映射 5432，Redis 7 映射 6379，均有 healthcheck。
 - [ ] Makefile 的 dev 命令使用 python -m uvicorn apps.api.app.main:app --reload --port 8000；test 运行 pytest -q；lint 运行 ruff check . 和前端 lint。
-- [ ] CI 使用 setup-python 3.12、setup-node 22，运行 pytest、ruff、前端 Vitest、ESLint；security job 运行 secret scan。
+- [ ] CI 使用 setup-python 3.12、setup-node 22，运行 pytest、ruff、前端 Vitest、ESLint；security job 运行 secret scan。foundation 阶段尚未创建 apps/web 时，frontend job 使用 if: hashFiles('apps/web/package.json') != '' 条件跳过；任务 9 创建前端后该 job 自动启用。
+- [ ] ci.yml 的 frontend job 使用以下条件，避免 foundation PR 在前端目录创建前失败：
+
+~~~yaml
+frontend:
+  if: hashFiles('apps/web/package.json') != ''
+  runs-on: ubuntu-latest
+~~~
 - [ ] 运行：
 
 ~~~powershell
@@ -503,4 +510,3 @@ python scripts/verify_release.py
 - [ ] 所有 release checks 返回 0。
 - [ ] CI、secret scan、后端、前端和构建均通过。
 - [ ] v0.1.0-mvp 指向最终合并提交。
-
