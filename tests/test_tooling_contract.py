@@ -111,7 +111,9 @@ def test_pyproject_declares_ruff_rule_set() -> None:
 
 def test_ci_workflow_runs_backend_gates_and_gates_frontend() -> None:
     content = (REPO_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "hashFiles('apps/web/package.json') != ''" in content
+    assert "detect-frontend" in content
+    assert "enabled=true" in content
+    assert "needs.detect-frontend.outputs.enabled == 'true'" in content
     assert "pytest" in content
     assert "ruff" in content
     for node_version in ("'22'", '"22"'):
