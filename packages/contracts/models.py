@@ -17,7 +17,14 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from packages.contracts.enums import (
     AgentStepKind,
@@ -55,8 +62,25 @@ NonEmptyStr = Annotated[str, Field(min_length=1)]
 #: Probability-like value.
 UnitFloat = Annotated[float, Field(ge=0.0, le=1.0)]
 
-#: Timezone-aware UTC datetime.
-AwareDatetime = Annotated[datetime, Field()]
+
+def _require_timezone(value: datetime) -> datetime:
+    """Reject naive datetimes at coercion time.
+
+    This runs *during* field validation, before any model validator can
+    compare two datetimes — otherwise a naive input would raise
+    ``TypeError: can't compare offset-naive and offset-aware datetimes``
+    instead of a clean 422.
+    """
+    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+        raise ValueError(
+            "datetime must be timezone-aware; naive values are rejected "
+            "to avoid ambiguous clinical timelines"
+        )
+    return value
+
+
+#: Timezone-aware datetime. Naive values are rejected at coercion time.
+AwareDatetime = Annotated[datetime, AfterValidator(_require_timezone)]
 
 
 def new_id(prefix: str) -> str:
@@ -74,16 +98,6 @@ class StrictModel(BaseModel):
     """Base model: reject unknown fields, validate on assignment."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True, str_strip_whitespace=True)
-
-    @field_validator("*", mode="before")
-    @classmethod
-    def _reject_naive_datetimes(cls, value: Any) -> Any:
-        if isinstance(value, datetime) and value.tzinfo is None:
-            raise ValueError(
-                "datetime must be timezone-aware; naive values are rejected "
-                "to avoid ambiguous clinical timelines"
-            )
-        return value
 
 
 class ActorRef(StrictModel):

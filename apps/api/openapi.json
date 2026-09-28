@@ -1,0 +1,1013 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ClinLoop API",
+    "description": "Event-driven clinical workflow continuity API. Synthetic data only — engineered validation, not evidence of clinical effectiveness. The API proposes; it never diagnoses, recommends treatment, or writes to a medical record.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe",
+        "description": "Return ``{\"status\": \"ok\"}`` when the process is serving.",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Readiness probe",
+        "description": "Return ``ok`` only when the database answers a trivial query.",
+        "operationId": "readyz_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Readyz Readyz Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Ingest a clinical event",
+        "description": "Persist a clinical event and publish it for the workflow worker.\n\nThe event is stored before it is published so a worker crash cannot\nlose it; a re-delivery of the same ``event_id`` is rejected with 409\nrather than silently double-counted.",
+        "operationId": "ingest_event_api_v1_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClinicalEvent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventAcceptedResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An event with this event_id was already ingested"
+          },
+          "422": {
+            "description": "The event payload violates the contract"
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/timeline": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Patient event timeline",
+        "description": "Return the patient's events from the last ``hours``, oldest first.\n\nAn unknown patient is not an error — it is an empty timeline, which\nthe console renders as an empty state.",
+        "operationId": "patient_timeline_api_v1_patients__patient_id__timeline_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 720,
+              "minimum": 1,
+              "default": 24,
+              "title": "Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/loops": {
+      "get": {
+        "tags": [
+          "loops"
+        ],
+        "summary": "List a patient's open loops",
+        "description": "List loops for a patient. Pass ``active_only=true`` to hide closed work.",
+        "operationId": "list_loops_api_v1_patients__patient_id__loops_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Return only loops that are still open",
+              "default": false,
+              "title": "Active Only"
+            },
+            "description": "Return only loops that are still open"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoopSummary"
+                  },
+                  "title": "Response List Loops Api V1 Patients  Patient Id  Loops Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}": {
+      "get": {
+        "tags": [
+          "loops"
+        ],
+        "summary": "Open loop detail with intent and evidence",
+        "description": "Return a loop, its originating intent, its evidence and its findings.",
+        "operationId": "get_loop_api_v1_loops__loop_id__get",
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown loop"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/findings/{finding_id}": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Workflow gap detail",
+        "description": "Return a finding.\n\n``supporting_evidence`` and ``searched_sources`` are always included:\nthe console must be able to show *what was searched*, so that a gap in\ncoverage is never presented as proof of absence.",
+        "operationId": "get_finding_api_v1_findings__finding_id__get",
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown finding"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evidence/{evidence_id}": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Evidence node with its raw source pointer",
+        "description": "Return one evidence node.\n\n``source_type`` + ``source_id`` are the pointer back to the original\nrecord (e.g. ``LABS`` / ``LAB-8821``) that the evidence drawer opens.",
+        "operationId": "get_evidence_api_v1_evidence__evidence_id__get",
+        "parameters": [
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Evidence Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown evidence"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActorRef": {
+        "properties": {
+          "actor_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Actor Id"
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Role"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "actor_id",
+          "role"
+        ],
+        "title": "ActorRef",
+        "description": "Who or what produced a record."
+      },
+      "ClinicalEvent": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Patient Id"
+          },
+          "encounter_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Encounter Id"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "event_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Event Time"
+          },
+          "source_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Source Time"
+          },
+          "payload_ref": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Payload Ref"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "patient_id",
+          "encounter_id",
+          "event_type",
+          "event_time",
+          "source_time",
+          "payload_ref",
+          "actor"
+        ],
+        "title": "ClinicalEvent",
+        "description": "An inbound clinical event on the event stream.\n\n``source_time`` is when the source system recorded it; ``event_time``\nis when it occurred in the patient's timeline. They may differ\n(transcription lag) and are kept separate on purpose."
+      },
+      "EventAcceptedResponse": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted",
+            "default": true
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id"
+        ],
+        "title": "EventAcceptedResponse",
+        "description": "202 response for ``POST /api/v1/events``."
+      },
+      "EventType": {
+        "type": "string",
+        "enum": [
+          "NOTE_CREATED",
+          "ORDER_UPDATED",
+          "LAB_RESULT_CREATED",
+          "CONSULT_NOTE_CREATED",
+          "PROGRESS_NOTE_CREATED",
+          "HANDOFF_STARTED",
+          "PATIENT_EVIDENCE_SUBMITTED"
+        ],
+        "title": "EventType",
+        "description": "Clinical event types ingested by the workflow (≥6 required by the spec)."
+      },
+      "EvidenceSummary": {
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Evidence Id"
+          },
+          "source_type": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Type"
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "claim": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Claim"
+          },
+          "trust_level": {
+            "$ref": "#/components/schemas/TrustLevel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "evidence_id",
+          "source_type",
+          "source_id",
+          "observed_at",
+          "claim",
+          "trust_level"
+        ],
+        "title": "EvidenceSummary",
+        "description": "Compact evidence projection embedded in loop/timeline responses."
+      },
+      "FindingResponse": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Finding Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Patient Id"
+          },
+          "loop_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loop Id"
+          },
+          "intent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intent Id"
+          },
+          "finding_type": {
+            "$ref": "#/components/schemas/FindingType"
+          },
+          "claim": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Claim"
+          },
+          "supporting_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supporting Evidence"
+          },
+          "searched_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Searched Sources"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "requires_review": {
+            "type": "boolean",
+            "title": "Requires Review"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status"
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Detected At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "finding_id",
+          "patient_id",
+          "finding_type",
+          "claim",
+          "confidence",
+          "requires_review",
+          "review_status",
+          "detected_at"
+        ],
+        "title": "FindingResponse",
+        "description": "``GET /api/v1/findings/{finding_id}`` payload.\n\n``supporting_evidence`` and ``searched_sources`` are always present so\nthe console can show exactly what was searched."
+      },
+      "FindingType": {
+        "type": "string",
+        "enum": [
+          "INTENT_WITHOUT_PLAN",
+          "PLAN_WITHOUT_ORDER",
+          "ORDER_WITHOUT_EXECUTION",
+          "RESULT_WITHOUT_ACKNOWLEDGEMENT",
+          "UNACKNOWLEDGED_CRITICAL_RESULT",
+          "UNRESOLVED_HIGH_PRIORITY_LOOP",
+          "LOOP_MISSING_FROM_HANDOFF",
+          "CONFLICTING_EVIDENCE",
+          "STALE_LOOP",
+          "ORPHANED_LOOP"
+        ],
+        "title": "FindingType",
+        "description": "Workflow gap taxonomy (≥4 classes required by the spec).\n\nEach member names a break in the Plan -> Order -> Execution -> Result\n-> Response -> Handoff chain."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "ok"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "0.1.0"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HealthResponse",
+        "description": "``GET /healthz`` payload."
+      },
+      "IntentSummary": {
+        "properties": {
+          "intent_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Intent Id"
+          },
+          "intent_type": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Intent Type"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          },
+          "expected_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expected Evidence"
+          },
+          "requires_clinician_review": {
+            "type": "boolean",
+            "title": "Requires Clinician Review",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intent_id",
+          "intent_type",
+          "text"
+        ],
+        "title": "IntentSummary",
+        "description": "Compact intent projection."
+      },
+      "LoopDetailResponse": {
+        "properties": {
+          "loop": {
+            "$ref": "#/components/schemas/LoopSummary"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntentSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceSummary"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "findings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "loop"
+        ],
+        "title": "LoopDetailResponse",
+        "description": "``GET /api/v1/loops/{loop_id}`` payload: loop + intent + evidence."
+      },
+      "LoopState": {
+        "type": "string",
+        "enum": [
+          "CREATED",
+          "PLANNED",
+          "ORDERED",
+          "ACTION_REQUESTED",
+          "IN_PROGRESS",
+          "RESULT_AVAILABLE",
+          "ACKNOWLEDGED",
+          "RESOLVED",
+          "WAITING_EVENT",
+          "OVERDUE",
+          "ORPHANED",
+          "CONFLICTED",
+          "STALE",
+          "PENDING_REVIEW",
+          "CANCELLED"
+        ],
+        "title": "LoopState",
+        "description": "Lifecycle of an Open Loop.\n\nHappy path::\n\n    CREATED -> PLANNED -> ORDERED/ACTION_REQUESTED -> IN_PROGRESS\n    -> RESULT_AVAILABLE -> ACKNOWLEDGED -> RESOLVED\n\nException / waiting states are reachable from most active states."
+      },
+      "LoopSummary": {
+        "properties": {
+          "loop_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Loop Id"
+          },
+          "intent_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Intent Id"
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Goal"
+          },
+          "state": {
+            "$ref": "#/components/schemas/LoopState"
+          },
+          "waiting_for": {
+            "items": {
+              "$ref": "#/components/schemas/EventType"
+            },
+            "type": "array",
+            "title": "Waiting For"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Depends On"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority",
+            "default": "NORMAL"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "next_check_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Check At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "loop_id",
+          "intent_id",
+          "goal",
+          "state",
+          "confidence"
+        ],
+        "title": "LoopSummary",
+        "description": "Compact loop projection for list endpoints."
+      },
+      "TimelineEntry": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "event_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Event Time"
+          },
+          "source_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Source Time"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "payload_ref": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Payload Ref"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "event_type",
+          "event_time",
+          "source_time",
+          "actor",
+          "payload_ref"
+        ],
+        "title": "TimelineEntry",
+        "description": "One event on the patient timeline, oldest first."
+      },
+      "TimelineResponse": {
+        "properties": {
+          "patient_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Patient Id"
+          },
+          "hours": {
+            "type": "integer",
+            "maximum": 720.0,
+            "minimum": 1.0,
+            "title": "Hours"
+          },
+          "window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window End"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "patient_id",
+          "hours",
+          "window_start",
+          "window_end",
+          "count"
+        ],
+        "title": "TimelineResponse",
+        "description": "``GET /api/v1/patients/{patient_id}/timeline`` payload."
+      },
+      "TrustLevel": {
+        "type": "string",
+        "enum": [
+          "SYSTEM_VERIFIED",
+          "CLINICIAN_CONFIRMED",
+          "PATIENT_REPORTED",
+          "PENDING_VERIFICATION",
+          "UNVERIFIED"
+        ],
+        "title": "TrustLevel",
+        "description": "Provenance trust of an EvidenceNode.\n\n``PATIENT_REPORTED`` must stay at ``PENDING_VERIFICATION`` and can\nnever be promoted to ``SYSTEM_VERIFIED``."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness and readiness."
+    },
+    {
+      "name": "events",
+      "description": "Ingest and timeline."
+    },
+    {
+      "name": "loops",
+      "description": "Open Loop read models."
+    },
+    {
+      "name": "findings",
+      "description": "Workflow gaps and evidence."
+    }
+  ]
+}

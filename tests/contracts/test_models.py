@@ -73,6 +73,35 @@ def test_clinical_event_rejects_naive_event_time() -> None:
         make_event(event_time=datetime(2026, 9, 28, 9, 10))
 
 
+def test_naive_datetime_raises_validation_error_not_type_error() -> None:
+    """Regression: a naive value must fail cleanly, not crash a comparison.
+
+    ``source_time`` and ``event_time`` are compared by a model validator.
+    If the naive check ran too late, that comparison would raise a bare
+    ``TypeError`` and FastAPI would answer 500 instead of 422.
+    """
+    with pytest.raises(ValidationError) as excinfo:
+        make_event(source_time=datetime(2026, 9, 28, 9, 10))
+    assert "timezone-aware" in str(excinfo.value)
+
+
+def test_naive_datetime_from_iso_string_is_rejected() -> None:
+    """The same guarantee must hold for raw JSON payloads."""
+    with pytest.raises(ValidationError):
+        ClinicalEvent.model_validate(
+            {
+                "event_id": "EVT-NAIVE",
+                "patient_id": "P-1001",
+                "encounter_id": "ENC-2001",
+                "event_type": "NOTE_CREATED",
+                "event_time": "2026-09-28T09:10:00",
+                "source_time": "2026-09-28T09:11:00",
+                "payload_ref": "NOTE-1",
+                "actor": {"actor_id": "DR-1", "role": "PHYSICIAN"},
+            }
+        )
+
+
 def test_clinical_event_rejects_empty_id() -> None:
     with pytest.raises(ValidationError):
         make_event(event_id="")
