@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import Field
 
-from packages.contracts.enums import EventType, FindingType, LoopState, TrustLevel
+from packages.contracts.enums import EventType, FindingType, LoopState, ReviewAction, TrustLevel
 from packages.contracts.models import (
     ActorRef,
     AwareDatetime,
@@ -148,7 +148,7 @@ class FindingResponse(StrictModel):
 
 
 class ReviewRequest(StrictModel):
-    action: str
+    action: ReviewAction
     reason: str | None = None
 
 

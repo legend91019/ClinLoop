@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from apps.worker.worker.agent import WorkflowAgent
 from apps.worker.worker.bus import InMemoryEventBus
 

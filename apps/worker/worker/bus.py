@@ -1,7 +1,7 @@
 """Event bus implementations used by the workflow worker."""
+
 from __future__ import annotations
 
-import json
 from collections import deque
 from typing import Any
 
@@ -19,7 +19,9 @@ class InMemoryEventBus:
             self._seen.add(event.event_id)
         return event.event_id
 
-    def consume(self, consumer_group: str = "clinloop-workers", count: int = 10) -> list[ClinicalEvent]:
+    def consume(
+        self, consumer_group: str = "clinloop-workers", count: int = 10
+    ) -> list[ClinicalEvent]:
         del consumer_group
         result: list[ClinicalEvent] = []
         for _ in range(max(0, count)):
@@ -31,6 +33,7 @@ class InMemoryEventBus:
 
 class RedisStreamEventBus:
     """Redis Streams adapter; construction is lazy so local tests need no Redis."""
+
     def __init__(self, redis_client: Any, *, stream: str = "clinloop.events") -> None:
         self.redis = redis_client
         self.stream = stream
@@ -39,17 +42,23 @@ class RedisStreamEventBus:
         self.redis.xadd(self.stream, {"event": event.model_dump_json()}, id="*")
         return event.event_id
 
-    def consume(self, consumer_group: str = "clinloop-workers", count: int = 10) -> list[ClinicalEvent]:
+    def consume(
+        self, consumer_group: str = "clinloop-workers", count: int = 10
+    ) -> list[ClinicalEvent]:
         try:
             self.redis.xgroup_create(self.stream, consumer_group, id="0", mkstream=True)
         except Exception:
             pass
-        rows = self.redis.xreadgroup(consumer_group, "clinloop-worker", {self.stream: ">"}, count=count, block=1)
+        rows = self.redis.xreadgroup(
+            consumer_group, "clinloop-worker", {self.stream: ">"}, count=count, block=1
+        )
         events: list[ClinicalEvent] = []
         for _stream, messages in rows:
             for message_id, fields in messages:
                 raw = fields.get(b"event", fields.get("event"))
-                event = ClinicalEvent.model_validate_json(raw.decode() if isinstance(raw, bytes) else raw)
+                event = ClinicalEvent.model_validate_json(
+                    raw.decode() if isinstance(raw, bytes) else raw
+                )
                 events.append(event)
                 self.redis.xack(self.stream, consumer_group, message_id)
         return events

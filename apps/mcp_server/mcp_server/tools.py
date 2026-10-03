@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 class PatientNotFound(LookupError):
@@ -23,5 +24,14 @@ class ToolRegistry:
         return tuple(self._tools)
 
 
-READ_TOOLS = ("get_patient_snapshot", "get_recent_events", "get_orders", "get_labs", "get_consults", "get_progress_notes", "get_handoff", "get_patient_evidence")
+READ_TOOLS = (
+    "get_patient_snapshot",
+    "get_recent_events",
+    "get_orders",
+    "get_labs",
+    "get_consults",
+    "get_progress_notes",
+    "get_handoff",
+    "get_patient_evidence",
+)
 WRITE_TOOLS = ("record_review_decision", "seal_handoff_report")

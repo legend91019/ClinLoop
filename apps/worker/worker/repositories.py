@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from packages.contracts import AgentRun
 from apps.worker.worker.run_models import AgentRunRecord
+from packages.contracts import AgentRun
 
 
 class AgentRunRepository:
@@ -18,6 +18,14 @@ class AgentRunRepository:
         self._runs[run.run_id] = AgentRunRecord(run)
         if run.resumed_from_run_id is None:
             self._by_event[run.trigger_event_id] = run.run_id
+        return run
+
+    def save(self, run: AgentRun) -> AgentRun:
+        """Persist a replacement contract for an existing run."""
+        record = self._runs.get(run.run_id)
+        if record is None:
+            raise KeyError(f"unknown run_id: {run.run_id}")
+        record.run = run
         return run
 
     def append_trace(self, run_id: str, **trace) -> AgentRun:

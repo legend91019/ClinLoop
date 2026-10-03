@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
-import re
 
 
-def parse_time_window(text: str, *, now: datetime | None = None) -> tuple[datetime, datetime] | None:
+def parse_time_window(
+    text: str, *, now: datetime | None = None
+) -> tuple[datetime, datetime] | None:
     base = now or datetime.now(UTC)
     if "今天" in text:
         start = base.replace(hour=0, minute=0, second=0, microsecond=0)

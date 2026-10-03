@@ -8,6 +8,7 @@ from packages.domain.errors import (
     ReviewRequired,
     TrustEscalationDenied,
 )
+from packages.domain.guard import CandidateStateChange, Guard, GuardResult
 from packages.domain.state_machine import (
     can_transition,
     next_states,
@@ -25,7 +26,6 @@ from packages.domain.transition_policy import (
     required_review_for,
     requires_evidence_for,
 )
-from packages.domain.guard import CandidateStateChange, Guard, GuardResult
 from packages.domain.verifier import VerificationResult, verify_workflow_continuity
 
 __all__ = [

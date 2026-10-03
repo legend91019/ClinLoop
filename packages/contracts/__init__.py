@@ -10,15 +10,15 @@ from packages.contracts.api import (
     EventAcceptedResponse,
     EvidenceSummary,
     FindingResponse,
+    HandoffResponse,
     HealthResponse,
     IntentSummary,
     LoopDetailResponse,
     LoopSummary,
-    TimelineEntry,
-    TimelineResponse,
     ReviewRequest,
     ReviewResponse,
-    HandoffResponse,
+    TimelineEntry,
+    TimelineResponse,
 )
 from packages.contracts.enums import (
     ACTIVE_LOOP_STATES,

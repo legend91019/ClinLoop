@@ -24,6 +24,11 @@ def test_openapi_document_is_served(client: TestClient) -> None:
         "/api/v1/patients/{patient_id}/loops",
         "/api/v1/loops/{loop_id}",
         "/api/v1/findings/{finding_id}",
+        "/api/v1/findings/{finding_id}/review",
+        "/api/v1/patients/{patient_id}/handoff/draft",
+        "/api/v1/handoff/{handoff_id}/seal",
+        "/api/v1/patients/{patient_id}/audit",
+        "/api/v1/loops/{loop_id}/trace",
     ):
         assert path in schema["paths"], f"missing from OpenAPI: {path}"
 

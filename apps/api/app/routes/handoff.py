@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from fastapi import APIRouter, HTTPException, status
+
 from apps.api.app.dependencies import ActorDep, SessionDep
 from apps.api.app.services.handoff_service import create_draft, seal_handoff
 from packages.contracts import HandoffResponse
@@ -8,7 +10,20 @@ router = APIRouter(tags=["handoff"])
 
 
 def _response(report) -> HandoffResponse:
-    return HandoffResponse(handoff_id=report.handoff_id, patient_id=report.patient_id, encounter_id=report.encounter_id, status=report.status.value if hasattr(report.status, "value") else report.status, situation=report.situation, background=report.background, assessment=report.assessment, recommendation=report.recommendation, loop_ids=report.loop_ids, evidence_ids=report.evidence_ids, pending_items=report.pending_items, confirmed_items=report.confirmed_items)
+    return HandoffResponse(
+        handoff_id=report.handoff_id,
+        patient_id=report.patient_id,
+        encounter_id=report.encounter_id,
+        status=report.status.value if hasattr(report.status, "value") else report.status,
+        situation=report.situation,
+        background=report.background,
+        assessment=report.assessment,
+        recommendation=report.recommendation,
+        loop_ids=report.loop_ids,
+        evidence_ids=report.evidence_ids,
+        pending_items=report.pending_items,
+        confirmed_items=report.confirmed_items,
+    )
 
 
 @router.post("/patients/{patient_id}/handoff/draft", response_model=HandoffResponse)

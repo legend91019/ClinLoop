@@ -24,7 +24,7 @@ from apps.api.app.dependencies import (
     NoopEventPublisher,
     get_event_publisher,
 )
-from apps.api.app.routes import events, evidence, health, loops, review, audit, handoff, trace
+from apps.api.app.routes import audit, events, evidence, handoff, health, loops, review, trace
 from apps.api.app.settings import get_settings
 
 __all__ = ["app", "create_app"]
