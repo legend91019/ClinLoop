@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import Field
 
-from packages.contracts.enums import EventType, FindingType, LoopState, TrustLevel
+from packages.contracts.enums import EventType, FindingType, LoopState, ReviewAction, TrustLevel
 from packages.contracts.models import (
     ActorRef,
     AwareDatetime,
@@ -30,6 +30,9 @@ __all__ = [
     "LoopDetailResponse",
     "FindingResponse",
     "ErrorResponse",
+    "ReviewRequest",
+    "ReviewResponse",
+    "HandoffResponse",
 ]
 
 
@@ -142,3 +145,30 @@ class FindingResponse(StrictModel):
     requires_review: bool
     review_status: str
     detected_at: AwareDatetime
+
+
+class ReviewRequest(StrictModel):
+    action: ReviewAction
+    reason: str | None = None
+
+
+class ReviewResponse(StrictModel):
+    decision_id: NonEmptyStr
+    finding_id: NonEmptyStr
+    action: str
+    review_status: str
+
+
+class HandoffResponse(StrictModel):
+    handoff_id: NonEmptyStr
+    patient_id: NonEmptyStr
+    encounter_id: NonEmptyStr
+    status: str
+    situation: str = ""
+    background: str = ""
+    assessment: str = ""
+    recommendation: str = ""
+    loop_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    pending_items: list[str] = Field(default_factory=list)
+    confirmed_items: list[str] = Field(default_factory=list)

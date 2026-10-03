@@ -343,6 +343,328 @@
           }
         }
       }
+    },
+    "/api/v1/findings/{finding_id}/review": {
+      "post": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Review",
+        "operationId": "review_api_v1_findings__finding_id__review_post",
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Finding Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/audit": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "Audit",
+        "operationId": "audit_api_v1_patients__patient_id__audit_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/handoff/draft": {
+      "post": {
+        "tags": [
+          "handoff"
+        ],
+        "summary": "Draft",
+        "operationId": "draft_api_v1_patients__patient_id__handoff_draft_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "encounter_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ENC-2001",
+              "title": "Encounter Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/handoff/{handoff_id}/seal": {
+      "post": {
+        "tags": [
+          "handoff"
+        ],
+        "summary": "Seal",
+        "operationId": "seal_api_v1_handoff__handoff_id__seal_post",
+        "parameters": [
+          {
+            "name": "handoff_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Handoff Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/trace": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Trace",
+        "operationId": "trace_api_v1_loops__loop_id__trace_get",
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -649,6 +971,86 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HandoffResponse": {
+        "properties": {
+          "handoff_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Handoff Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Patient Id"
+          },
+          "encounter_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Encounter Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "situation": {
+            "type": "string",
+            "title": "Situation",
+            "default": ""
+          },
+          "background": {
+            "type": "string",
+            "title": "Background",
+            "default": ""
+          },
+          "assessment": {
+            "type": "string",
+            "title": "Assessment",
+            "default": ""
+          },
+          "recommendation": {
+            "type": "string",
+            "title": "Recommendation",
+            "default": ""
+          },
+          "loop_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Loop Ids"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Ids"
+          },
+          "pending_items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pending Items"
+          },
+          "confirmed_items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmed Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "handoff_id",
+          "patient_id",
+          "encounter_id",
+          "status"
+        ],
+        "title": "HandoffResponse"
+      },
       "HealthResponse": {
         "properties": {
           "status": {
@@ -847,6 +1249,71 @@
         ],
         "title": "LoopSummary",
         "description": "Compact loop projection for list endpoints."
+      },
+      "ReviewAction": {
+        "type": "string",
+        "enum": [
+          "ACCEPT",
+          "REJECT",
+          "EDIT"
+        ],
+        "title": "ReviewAction",
+        "description": "Clinician decision recorded against a Finding."
+      },
+      "ReviewRequest": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ReviewAction"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "ReviewRequest"
+      },
+      "ReviewResponse": {
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Decision Id"
+          },
+          "finding_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Finding Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision_id",
+          "finding_id",
+          "action",
+          "review_status"
+        ],
+        "title": "ReviewResponse"
       },
       "TimelineEntry": {
         "properties": {

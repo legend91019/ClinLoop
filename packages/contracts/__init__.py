@@ -10,10 +10,13 @@ from packages.contracts.api import (
     EventAcceptedResponse,
     EvidenceSummary,
     FindingResponse,
+    HandoffResponse,
     HealthResponse,
     IntentSummary,
     LoopDetailResponse,
     LoopSummary,
+    ReviewRequest,
+    ReviewResponse,
     TimelineEntry,
     TimelineResponse,
 )
@@ -90,4 +93,7 @@ __all__ = [
     "LoopSummary",
     "LoopDetailResponse",
     "FindingResponse",
+    "ReviewRequest",
+    "ReviewResponse",
+    "HandoffResponse",
 ]
