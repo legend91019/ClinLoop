@@ -16,6 +16,9 @@ from packages.contracts.api import (
     LoopSummary,
     TimelineEntry,
     TimelineResponse,
+    ReviewRequest,
+    ReviewResponse,
+    HandoffResponse,
 )
 from packages.contracts.enums import (
     ACTIVE_LOOP_STATES,
@@ -90,4 +93,7 @@ __all__ = [
     "LoopSummary",
     "LoopDetailResponse",
     "FindingResponse",
+    "ReviewRequest",
+    "ReviewResponse",
+    "HandoffResponse",
 ]

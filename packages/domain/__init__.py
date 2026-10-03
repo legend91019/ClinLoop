@@ -25,6 +25,8 @@ from packages.domain.transition_policy import (
     required_review_for,
     requires_evidence_for,
 )
+from packages.domain.guard import CandidateStateChange, Guard, GuardResult
+from packages.domain.verifier import VerificationResult, verify_workflow_continuity
 
 __all__ = [
     # errors
@@ -49,4 +51,9 @@ __all__ = [
     "requires_evidence_for",
     "is_system_driven",
     "is_terminal",
+    "CandidateStateChange",
+    "Guard",
+    "GuardResult",
+    "VerificationResult",
+    "verify_workflow_continuity",
 ]
