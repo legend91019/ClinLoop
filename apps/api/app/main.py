@@ -24,7 +24,7 @@ from apps.api.app.dependencies import (
     NoopEventPublisher,
     get_event_publisher,
 )
-from apps.api.app.routes import events, evidence, health, loops
+from apps.api.app.routes import audit, events, evidence, handoff, health, loops, review, trace
 from apps.api.app.settings import get_settings
 
 __all__ = ["app", "create_app"]
@@ -82,6 +82,10 @@ def create_app(*, event_publisher: EventPublisher | None = None) -> FastAPI:
     application.include_router(events.router, prefix=settings.api_prefix)
     application.include_router(loops.router, prefix=settings.api_prefix)
     application.include_router(evidence.router, prefix=settings.api_prefix)
+    application.include_router(review.router, prefix=settings.api_prefix)
+    application.include_router(audit.router, prefix=settings.api_prefix)
+    application.include_router(handoff.router, prefix=settings.api_prefix)
+    application.include_router(trace.router, prefix=settings.api_prefix)
 
     @application.exception_handler(ValueError)
     async def _value_error_handler(_request: Request, exc: ValueError) -> JSONResponse:
