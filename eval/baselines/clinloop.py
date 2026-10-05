@@ -14,7 +14,11 @@ class ClinLoopAdapter:
     ]
 
     def __init__(self):
-        self.agent = WorkflowAgent()
+        # Evaluation intentionally measures the existing worker behavior on
+        # the visible event stream. Context materialization belongs to the
+        # production runtime/demo path and must not create hidden gold access
+        # for synthetic benchmark cases.
+        self.agent = WorkflowAgent(materialize_context=False)
 
     def handle_event(self, event, context):
         # Only now-available events have reached this adapter. Do not preload

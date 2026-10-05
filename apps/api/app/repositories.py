@@ -599,6 +599,27 @@ class AgentRunRepository:
         )
         return self.session.scalars(stmt).first() is not None
 
+    def get_for_trigger(self, trigger_event_id: str) -> AgentRun | None:
+        """Return the first durable run for an event, if it was already handled.
+
+        The worker may create a resumed child run for the same event, so this
+        method intentionally does not filter on ``resumed_from_run_id``.  It
+        gives replay tools a stable idempotency lookup without exposing ORM
+        rows to callers.
+        """
+        stmt = (
+            select(AgentRunRow)
+            .where(AgentRunRow.trigger_event_id == trigger_event_id)
+            .order_by(AgentRunRow.started_at.asc(), AgentRunRow.run_id.asc())
+        )
+        row = self.session.scalars(stmt).first()
+        return self._to_contract(row) if row is not None else None
+
+    def get(self, run_id: str) -> AgentRun | None:
+        """Return one durable run as a contract."""
+        row = self.session.get(AgentRunRow, run_id)
+        return self._to_contract(row) if row is not None else None
+
     def append_trace(
         self,
         run_id: str,
