@@ -252,6 +252,98 @@
         }
       }
     },
+    "/api/v1/patients/{patient_id}/findings": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "List Findings",
+        "operationId": "list_findings_api_v1_patients__patient_id__findings_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FindingResponse"
+                  },
+                  "title": "Response List Findings Api V1 Patients  Patient Id  Findings Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evidence/{evidence_id}/source": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Get Evidence Source",
+        "description": "Resolve explicit provenance.event_id first, validating patient, encounter and source type. Without an explicit pointer, return only an unambiguous source in the same scope.",
+        "operationId": "get_evidence_source_api_v1_evidence__evidence_id__source_get",
+        "parameters": [
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Evidence Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicalEvent"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown evidence or unavailable, invalid or ambiguous source"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/findings/{finding_id}": {
       "get": {
         "tags": [
@@ -468,6 +560,139 @@
         }
       }
     },
+    "/api/v1/handoff/{handoff_id}": {
+      "get": {
+        "tags": [
+          "handoff"
+        ],
+        "summary": "Read Handoff",
+        "operationId": "read_handoff_api_v1_handoff__handoff_id__get",
+        "parameters": [
+          {
+            "name": "handoff_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Handoff Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "handoff"
+        ],
+        "summary": "Edit Draft",
+        "operationId": "edit_draft_api_v1_handoff__handoff_id__patch",
+        "parameters": [
+          {
+            "name": "handoff_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Handoff Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffDraftUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Clinician role required"
+          },
+          "404": {
+            "description": "Unknown handoff"
+          },
+          "409": {
+            "description": "Handoff is not a draft or changed concurrently; reload and retry"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/patients/{patient_id}/handoff/draft": {
       "post": {
         "tags": [
@@ -558,6 +783,7 @@
           "handoff"
         ],
         "summary": "Seal",
+        "description": "Refresh encounter-scoped derived links and review-labelled collections before sealing. Preserve the four SBAR text fields; accepted findings are not confirmed clinical facts.",
         "operationId": "seal_api_v1_handoff__handoff_id__seal_post",
         "parameters": [
           {
@@ -612,6 +838,15 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Clinician role required"
+          },
+          "404": {
+            "description": "Unknown handoff"
+          },
+          "409": {
+            "description": "Pending high-risk review, non-draft status, or concurrent change"
           },
           "422": {
             "description": "Validation Error",
@@ -970,6 +1205,37 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HandoffDraftUpdate": {
+        "properties": {
+          "situation": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Situation",
+            "default": ""
+          },
+          "background": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Background",
+            "default": ""
+          },
+          "assessment": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Assessment",
+            "default": ""
+          },
+          "recommendation": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Recommendation",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HandoffDraftUpdate"
       },
       "HandoffResponse": {
         "properties": {

@@ -16,6 +16,9 @@ def review(
     try:
         decision = review_finding(session, finding_id, body.action, actor, body.reason)
         session.commit()
+    except PermissionError as exc:
+        session.rollback()
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except KeyError as exc:
         session.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

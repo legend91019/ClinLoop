@@ -8,6 +8,8 @@ from packages.contracts import ActorRef, ReviewAction, ReviewDecision, new_id
 def review_finding(
     session, finding_id: str, action: ReviewAction, reviewer: ActorRef, reason: str | None = None
 ) -> ReviewDecision:
+    if reviewer.role not in {"PHYSICIAN", "CLINICIAN"}:
+        raise PermissionError("clinician role required")
     row = session.get(FindingRow, finding_id)
     if row is None:
         raise KeyError(finding_id)
@@ -48,6 +50,8 @@ def review_finding(
         old_state=old,
         new_state=row.review_status,
         reason=reason,
+        source_run_id=row.source_run_id,
+        payload={"patient_id": row.patient_id, "decision_id": decision.decision_id},
     )
     session.flush()
     return decision

@@ -19,6 +19,7 @@ dependencies = [
     "alembic>=1.13",
     "psycopg[binary]>=3.2",
     "redis>=5.0",
+    "httpx>=0.27",
 ]
 
 [dependency-groups]
@@ -29,22 +30,11 @@ dev = [
     "ruff>=0.6",
 ]
 
-[tool.setuptools]
-# Explicit package discovery; every path segment must contain __init__.py.
-packages = [
-    "apps",
-    "apps.api",
-    "apps.api.app",
-    "apps.api.app.routes",
-    "apps.worker",
-    "apps.worker.worker",
-    "apps.mcp_server",
-    "apps.mcp_server.mcp_server",
-    "packages",
-    "packages.contracts",
-    "packages.domain",
-    "packages.fixtures",
-]
+[tool.setuptools.packages.find]
+# Include new evaluation and service packages in wheels, not only source checkouts.
+where = ["."]
+include = ["apps*", "packages*", "eval*"]
+namespaces = false
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

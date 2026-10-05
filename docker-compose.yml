@@ -59,3 +59,23 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  worker:
+    image: python:3.12-slim
+    container_name: clinloop-worker
+    profiles: ["full", "demo"]
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir -e . &&
+             python scripts/run_demo.py --patient P-1001"
+    environment:
+      DATABASE_URL: postgresql+psycopg://clinloop:clinloop@postgres:5432/clinloop
+      REDIS_URL: redis://redis:6379/0
+      AGENT_PROVIDER: mock
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
