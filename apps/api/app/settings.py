@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     app_name: str = "ClinLoop API"
     app_version: str = "0.1.0"
     api_prefix: str = "/api/v1"
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     @property
     def is_sqlite(self) -> bool:

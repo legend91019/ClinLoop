@@ -16,6 +16,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from apps.api.app import db as db_module
@@ -73,6 +74,13 @@ def create_app(*, event_publisher: EventPublisher | None = None) -> FastAPI:
             {"name": "loops", "description": "Open Loop read models."},
             {"name": "findings", "description": "Workflow gaps and evidence."},
         ],
+    )
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=["Content-Type", "X-Actor-Id", "X-Actor-Role"],
     )
 
     if event_publisher is not None:

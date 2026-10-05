@@ -115,6 +115,7 @@ def evidence_row_to_contract(row: EvidenceNodeRow) -> EvidenceNode:
     return EvidenceNode(
         evidence_id=row.evidence_id,
         patient_id=row.patient_id,
+        encounter_id=(row.payload or {}).get("encounter_id"),
         source_type=row.source_type,
         source_id=row.source_id,
         observed_at=as_utc(row.observed_at),
