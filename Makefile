@@ -1,4 +1,4 @@
-.PHONY: help install test lint format format-check dev seed reset-db up down eval demo
+.PHONY: help install test test-integration lint format format-check dev seed reset-db up down eval demo
 
 PYTHON ?= python
 PIP ?= $(PYTHON) -m pip
@@ -12,6 +12,9 @@ install: ## Install Python dependencies (editable) and frontend deps when presen
 
 test: ## Run backend test suite
 	$(PYTHON) -m pytest -q
+
+test-integration: ## Run the end-to-end synthetic demo flow
+	$(PYTHON) -m pytest tests/integration -q
 
 lint: ## Lint backend and frontend
 	$(PYTHON) -m ruff check .
