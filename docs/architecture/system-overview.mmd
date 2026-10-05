@@ -1,0 +1,9 @@
+flowchart LR
+  E[Event Stream] --> A[FastAPI API]
+  A --> W[Workflow Worker]
+  W --> M[MCP read tools]
+  W --> WM[Workflow Memory]
+  WM --> G[Deterministic Guard]
+  G --> R[Doctor Review]
+  R --> DB[(PostgreSQL)]
+  R --> UI[React Doctor Console]

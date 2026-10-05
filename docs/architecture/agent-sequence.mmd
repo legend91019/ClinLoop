@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant E as Event Stream
+  participant W as WorkflowAgent
+  participant M as Workflow Memory
+  participant G as Guard
+  participant D as Doctor
+  E->>W: ClinicalEvent
+  W->>M: OBSERVE context
+  W->>W: REASON and PLAN
+  W->>W: ACT through allowlisted tools
+  W->>G: VERIFY candidate change
+  G-->>D: finding / review required
+  D->>G: accept, reject, or edit
+  G-->>M: persist approved result

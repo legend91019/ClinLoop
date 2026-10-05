@@ -41,7 +41,10 @@ redis-data/
 *.db
 
 # --- Artifacts ---
-artifacts/
+artifacts/*
+!artifacts/eval/
+!artifacts/eval/report.json
+!artifacts/eval/comparison.csv
 dist/
 
 # --- Editors / OS ---

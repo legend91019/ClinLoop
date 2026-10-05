@@ -4,6 +4,7 @@ from collections.abc import Sequence
 
 from apps.worker.worker.memory import WorkflowMemory
 from apps.worker.worker.planner import plan_for_event
+from apps.worker.worker.policies import ExecutionPolicy
 from apps.worker.worker.repositories import AgentRunRepository
 from apps.worker.worker.skills.intent import extract_clinical_intent
 from packages.contracts import (
@@ -30,10 +31,12 @@ class WorkflowAgent:
         *,
         step_budget: int = 8,
         materialize_context: bool = True,
+        policy: ExecutionPolicy | None = None,
     ) -> None:
         self.memory = memory or WorkflowMemory()
         self.runs = runs or AgentRunRepository()
-        self.step_budget = step_budget
+        self.policy = policy or ExecutionPolicy(max_steps=step_budget)
+        self.step_budget = self.policy.max_steps
         self.materialize_context = materialize_context
         self.findings: dict[str, Finding] = {}
 
@@ -207,8 +210,13 @@ class WorkflowAgent:
             for kind in AgentStepKind
         ]
         stop = StopReason.WAITING_EXTERNAL_EVENT
+        if len(steps) > self.policy.max_steps:
+            stop = StopReason.BUDGET_EXCEEDED
         updates = {"steps": steps[: self.step_budget], "stop_reason": stop, "finished_at": utcnow()}
-        if event.event_type is EventType.LAB_RESULT_CREATED:
+        if (
+            event.event_type is EventType.LAB_RESULT_CREATED
+            and stop is not StopReason.BUDGET_EXCEEDED
+        ):
             finding = Finding(
                 finding_id=new_id("FND"),
                 patient_id=event.patient_id,
