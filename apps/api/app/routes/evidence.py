@@ -13,11 +13,42 @@ from fastapi import APIRouter, HTTPException, status
 
 from apps.api.app.dependencies import SessionDep
 from apps.api.app.repositories import EvidenceRepository, FindingRepository
-from packages.contracts import EvidenceSummary, FindingResponse
+from apps.api.app.services.evidence_source_service import resolve_source_event
+from packages.contracts import ClinicalEvent, EvidenceSummary, FindingResponse
 
 __all__ = ["router"]
 
 router = APIRouter(tags=["findings"])
+
+
+@router.get("/patients/{patient_id}/findings", response_model=list[FindingResponse])
+def list_findings(patient_id: str, session: SessionDep) -> list[FindingResponse]:
+    return [
+        get_finding(item.finding_id, session)
+        for item in FindingRepository(session).list_for_patient(patient_id)
+    ]
+
+
+@router.get(
+    "/evidence/{evidence_id}/source",
+    response_model=ClinicalEvent,
+    description=(
+        "Resolve explicit provenance.event_id first, validating patient, encounter and source type. "
+        "Without an explicit pointer, return only an unambiguous source in the same scope."
+    ),
+    responses={
+        404: {"description": "Unknown evidence or unavailable, invalid or ambiguous source"}
+    },
+)
+def get_evidence_source(evidence_id: str, session: SessionDep) -> ClinicalEvent:
+    """Resolve a source pointer within the evidence patient's event store."""
+    node = EvidenceRepository(session).get(evidence_id)
+    if node is None:
+        raise HTTPException(status_code=404, detail="unknown evidence")
+    event = resolve_source_event(session, node)
+    if event is None:
+        raise HTTPException(status_code=404, detail="original source unavailable or ambiguous")
+    return event
 
 
 @router.get(

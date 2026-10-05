@@ -95,12 +95,16 @@ make lint            # ruff check . + 前端 lint
 make format-check    # ruff format --check + prettier --check
 ```
 
-前端（任务 9 之后）：
+前端：
 
 ```bash
+npm --prefix apps/web ci
+npm --prefix apps/web run dev
 npm --prefix apps/web run test -- --run
 npm --prefix apps/web run build
 ```
+
+工作台地址为 `http://127.0.0.1:5173/?patient=P-1001`。医生身份、证据抽屉、审核、交接编辑和评测说明见 [医生工作台与合成评测](docs/development/doctor-console-evaluation.md)。
 
 ## 6. Demo
 
@@ -129,6 +133,8 @@ python -m eval.run_eval --count 100 --seed 20260928 --output artifacts/eval/repo
 
 固定 seed 生成至少 100 条合成轨迹，比较四类方法：**Direct LLM**、**RAG + Template**、**Rule Engine**、**ClinLoop**。
 指标：Workflow Gap Recall、False Alarm Rate、Evidence Coverage、Handoff Omission Rate。
+
+默认模型方法使用明确标注的离线 mock，仅验证工程链路。真实模型须显式指定 provider；默认结果不代表 LLM 或 RAG 的效果。详见 [评测说明](eval/README.md)。
 
 ## 8. Git / PR 规则
 
