@@ -151,3 +151,15 @@ python -m eval.run_eval --count 100 --seed 20260928 --output artifacts/eval/repo
 - Intent taxonomy 有限（`FOLLOW_RESULT`、`FOLLOW_CONSULT`、`EXECUTE_ORDER`、`UPDATE_PLAN`）。
 - 无真实 EHR / FHIR 写入，MCP Server 只读模拟数据。
 - MVP 未覆盖多患者并发调度与生产级高可用。
+
+## 10. 发布验收
+
+```bash
+python scripts/verify_release.py
+```
+
+固定 seed 的评测报告位于 `artifacts/eval/report.json`，方法对比位于
+`artifacts/eval/comparison.csv`。演示和架构材料见
+[`docs/demo/runbook.md`](docs/demo/runbook.md)、
+[`docs/architecture/system-overview.mmd`](docs/architecture/system-overview.mmd)
+和 [`docs/release/mvp-checklist.md`](docs/release/mvp-checklist.md)。

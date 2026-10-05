@@ -1,0 +1,1 @@
+method,provider_kind,gap_recall,false_alarm_rate,evidence_coverage,handoff_omission_rate,model_calls\nClinLoop,worker_runtime,0.26666666666666666,0.24615384615384617,1.0,1.0,0\ndirect_llm,mock,0.0,0.0,0.0,1.0,100\nrag_template,mock,0.0,0.0,0.0,1.0,100\nrule_engine,rules,1.0,0.0,1.0,0.0,0\n
