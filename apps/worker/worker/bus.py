@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from dataclasses import dataclass
 from typing import Any
 
 from packages.contracts import ClinicalEvent
@@ -62,6 +63,41 @@ class RedisStreamEventBus:
                 events.append(event)
                 self.redis.xack(self.stream, consumer_group, message_id)
         return events
+
+    def consume_messages(
+        self, consumer_group: str = "clinloop-workers", count: int = 10
+    ) -> list[RedisMessage]:
+        """Read messages without acknowledging them.
+
+        Durable workers call :meth:`ack` only after their database transaction
+        has completed. The legacy ``consume`` method remains auto-acknowledged
+        for small adapters and existing tests.
+        """
+        try:
+            self.redis.xgroup_create(self.stream, consumer_group, id="0", mkstream=True)
+        except Exception:
+            pass
+        rows = self.redis.xreadgroup(
+            consumer_group, "clinloop-worker", {self.stream: ">"}, count=count, block=1
+        )
+        messages: list[RedisMessage] = []
+        for _stream, entries in rows:
+            for message_id, fields in entries:
+                raw = fields.get(b"event", fields.get("event"))
+                event = ClinicalEvent.model_validate_json(
+                    raw.decode() if isinstance(raw, bytes) else raw
+                )
+                messages.append(RedisMessage(message_id=message_id, event=event))
+        return messages
+
+    def ack(self, message: RedisMessage, consumer_group: str = "clinloop-workers") -> None:
+        self.redis.xack(self.stream, consumer_group, message.message_id)
+
+
+@dataclass(frozen=True)
+class RedisMessage:
+    message_id: str | bytes
+    event: ClinicalEvent
 
 
 EventBus = InMemoryEventBus | RedisStreamEventBus

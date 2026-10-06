@@ -696,6 +696,7 @@ class AgentRunRepository:
             tool_calls=row.tool_calls or [],
             finding_ids=list(row.finding_ids or []),
             candidate_state_changes=dict(row.candidate_state_changes or {}),
+            trace_metadata=dict((row.payload or {}).get("trace_metadata", {})),
             stop_reason=row.stop_reason,
             started_at=as_utc(row.started_at),
             finished_at=as_utc_optional(row.finished_at),

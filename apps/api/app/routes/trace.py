@@ -21,6 +21,7 @@ def trace(loop_id: str, session: SessionDep):
             "steps": row.steps or [],
             "tool_calls": row.tool_calls or [],
             "stop_reason": row.stop_reason,
+            "trace_metadata": (row.payload or {}).get("trace_metadata", {}),
         }
         for row in rows
     ]

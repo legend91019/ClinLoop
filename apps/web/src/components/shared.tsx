@@ -51,6 +51,7 @@ export const labels: Record<string, string> = {
   SUFFICIENT_EVIDENCE: '证据已充分',
   BUDGET_EXCEEDED: '达到运行预算',
   CONFLICTED_EVIDENCE: '证据存在冲突',
+  MODEL_ERROR: '模型调用失败',
   HIGH: '高优先级',
   CRITICAL: '紧急',
   NORMAL: '常规',

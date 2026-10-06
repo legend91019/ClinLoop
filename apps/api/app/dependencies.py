@@ -20,6 +20,8 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from apps.api.app.db import get_session
+from apps.api.app.settings import get_settings
+from apps.worker.worker.bus import RedisStreamEventBus
 from packages.contracts import ActorRef, ClinicalEvent
 
 __all__ = [
@@ -92,13 +94,29 @@ class InMemoryEventPublisher:
         return drained
 
 
+class RedisEventPublisher:
+    """API publisher backed by the same Redis Stream as the Worker."""
+
+    def __init__(self, bus: RedisStreamEventBus) -> None:
+        self.bus = bus
+
+    def publish(self, event: ClinicalEvent) -> str:
+        return self.bus.publish(event)
+
+
 def get_event_publisher() -> EventPublisher:
     """FastAPI dependency returning the active publisher.
 
     Overridable via ``app.dependency_overrides`` in tests, or by
     ``create_app(event_publisher=...)``.
     """
-    return _DEFAULT_PUBLISHER
+    settings = get_settings()
+    if settings.event_bus.strip().lower() != "redis":
+        return _DEFAULT_PUBLISHER
+    import redis
+
+    client = redis.Redis.from_url(settings.redis_url)
+    return RedisEventPublisher(RedisStreamEventBus(client))
 
 
 _DEFAULT_PUBLISHER: EventPublisher = NoopEventPublisher()

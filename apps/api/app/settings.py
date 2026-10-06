@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     # --- persistence ---
     database_url: str = "postgresql+psycopg://clinloop:clinloop@localhost:5432/clinloop"
     redis_url: str = "redis://localhost:6379/0"
+    event_bus: str = "noop"
 
     # --- ports ---
     api_port: int = 8000
@@ -36,6 +37,9 @@ class Settings(BaseSettings):
     agent_provider: str = "mock"
     agent_step_budget: int = 8
     agent_timeout_seconds: int = 30
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    deepseek_model: str = "deepseek-chat"
 
     # --- api ---
     app_name: str = "ClinLoop API"
