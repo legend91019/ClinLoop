@@ -106,6 +106,23 @@ npm --prefix apps/web run build
 
 工作台地址为 `http://127.0.0.1:5173/?patient=P-1001`。医生身份、证据抽屉、审核、交接编辑和评测说明见 [医生工作台与合成评测](docs/development/doctor-console-evaluation.md)。
 
+### 真实 DeepSeek Agent 试用
+
+默认 `AGENT_PROVIDER=mock`，用于无密钥的离线演示。要让 Worker 调用真实
+DeepSeek 模型，请只在本机 `.env` 中设置：
+
+```dotenv
+AGENT_PROVIDER=deepseek
+DEEPSEEK_API_KEY=你的本机密钥
+DEEPSEEK_MODEL=deepseek-chat
+EVENT_BUS=redis
+```
+
+然后按 [DeepSeek Agent 试用指南](docs/development/deepseek-agent-trial.md)
+启动 PostgreSQL、Redis、API、Worker 和前端。模型只提交候选 Intent 与证据引用；
+Deterministic Guard 仍负责状态合法性和高风险审核。模型调用失败时，本次事件会以
+`MODEL_ERROR` 结束并保留错误码，不会自动写入临床 Finding。
+
 ## 6. Demo
 
 主 Demo 病例 `P-1001`（`CASE-BLOOD-CULTURE`）：

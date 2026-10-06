@@ -139,7 +139,9 @@ class WorkflowAgent:
                     patient_id=event.patient_id,
                     encounter_id=event.encounter_id,
                     intent_id=intent.intent_id,
-                    goal=proposal.goal if proposal is not None else "Follow up the repeat blood culture result",
+                    goal=proposal.goal
+                    if proposal is not None
+                    else "Follow up the repeat blood culture result",
                     state=LoopState.WAITING_EVENT,
                     waiting_for=(
                         proposal.waiting_for
@@ -314,10 +316,10 @@ class WorkflowAgent:
         if not model_error and len(steps) > self.policy.max_steps:
             stop = StopReason.BUDGET_EXCEEDED
         updates = {"steps": steps[: self.step_budget], "stop_reason": stop, "finished_at": utcnow()}
-        if (
-            event.event_type is EventType.LAB_RESULT_CREATED
-            and stop not in {StopReason.BUDGET_EXCEEDED, StopReason.MODEL_ERROR}
-        ):
+        if event.event_type is EventType.LAB_RESULT_CREATED and stop not in {
+            StopReason.BUDGET_EXCEEDED,
+            StopReason.MODEL_ERROR,
+        }:
             finding = Finding(
                 finding_id=new_id("FND"),
                 patient_id=event.patient_id,

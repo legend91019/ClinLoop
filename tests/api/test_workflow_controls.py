@@ -31,7 +31,9 @@ def test_trace_route_is_queryable_for_a_loop(client: TestClient) -> None:
     response = client.get("/api/v1/loops/LOOP-1001/trace")
 
     assert response.status_code == 200
-    assert response.json() == []
+    traces = response.json()
+    assert isinstance(traces, list)
+    assert all(trace["loop_id"] == "LOOP-1001" for trace in traces)
 
 
 def test_review_route_rejects_missing_reason(client: TestClient) -> None:

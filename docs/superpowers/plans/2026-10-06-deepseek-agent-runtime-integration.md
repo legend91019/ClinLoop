@@ -104,7 +104,7 @@
 - `scripts/run_worker.py --once` consumes one Redis batch; without `--once` it continues polling. Redis consumption must return an explicit message acknowledgement handle; the Worker acknowledges only after the database transaction completes.
 
 - [ ] Write an integration test with fake Redis and fake provider: POST event, consume it, process it, verify AgentRun and finding persistence, and verify duplicate event id remains rejected.
-- [ ] Add a failure test proving the Redis message is not acknowledged when the provider stops with `MODEL_ERROR` or persistence fails.
+- [ ] Add a failure test proving persistence completes before the Redis message is acknowledged; a `MODEL_ERROR` run is safely persisted and then acknowledged so one poison message cannot block the stream forever, while persistence failures leave the message pending.
 - [ ] Run the integration tests and verify they fail before implementation.
 - [ ] Implement Redis publisher creation from settings with explicit `EVENT_BUS=redis`; keep the current no-op publisher for API-only local use. Change `RedisStreamEventBus.consume()` so it does not acknowledge messages automatically and add `ack(message)` for the Worker.
 - [ ] Extract demo persistence logic into `apps/worker/worker/service.py`; persist the run, candidate findings, and append an audit entry only after successful validation.
