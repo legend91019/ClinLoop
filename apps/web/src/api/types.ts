@@ -109,6 +109,7 @@ export interface AgentRun {
   steps: AgentStep[];
   tool_calls: ToolCall[];
   stop_reason: string | null;
+  trace_metadata?: Record<string, string | number>;
 }
 export interface HandoffText {
   situation: string;

@@ -907,6 +907,21 @@ svg {
   margin-bottom: 5px;
   gap: 10px;
 }
+.trace-model-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  background: #f0f6f8;
+  border: 1px solid #dcebed;
+  border-radius: 6px;
+  padding: 7px 9px;
+  color: #4d6e76;
+  font-size: 10px;
+}
+.trace-model-meta strong {
+  color: #2e5e66;
+}
 .trace-steps {
   list-style: none;
   padding: 0;

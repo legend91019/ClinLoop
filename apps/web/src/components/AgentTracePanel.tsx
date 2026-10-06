@@ -59,6 +59,23 @@ function TraceContent({ loopId }: { loopId: string }) {
           <p className="meta">
             触发事件 {run.trigger_event_id} · 意图 {run.intent_id || '未关联'}
           </p>
+          {run.trace_metadata?.provider && (
+            <div className="trace-model-meta">
+              <strong>模型参与</strong>
+              <span>
+                {run.trace_metadata.provider} ·{' '}
+                {run.trace_metadata.model || '未声明'}
+              </span>
+              {run.trace_metadata.proposal_ref && (
+                <span>提案 {run.trace_metadata.proposal_ref}</span>
+              )}
+              {run.trace_metadata.error_code && (
+                <span className="error-text">
+                  错误 {run.trace_metadata.error_code}
+                </span>
+              )}
+            </div>
+          )}
           <ol className="trace-steps">
             {run.steps.map((step, index) => (
               <li key={step.step_id}>

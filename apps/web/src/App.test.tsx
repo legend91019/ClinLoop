@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 import { json, serve } from './test/server';
-import { finding, timeline } from './test/fixtures';
+import { finding, runs, timeline } from './test/fixtures';
 
 describe('doctor workspace', () => {
   it('allows a 720-hour demo window and forwards it to the timeline endpoint', async () => {
@@ -137,5 +137,28 @@ describe('doctor workspace', () => {
     expect(argumentsToggle.closest('details')).toHaveAttribute('open');
     expect(screen.getByText(/ACT-SECRET-ARG/)).toBeVisible();
     expect(screen.getByText('需要医生审核')).toBeInTheDocument();
+  });
+  it('shows model provider metadata and safe model errors in the trace', async () => {
+    serve((r) =>
+      r.url.pathname.endsWith('/trace')
+        ? json([
+            {
+              ...runs[0],
+              stop_reason: 'MODEL_ERROR',
+              trace_metadata: {
+                provider: 'deepseek',
+                model: 'deepseek-chat',
+                proposal_ref: 'PROP-1',
+                error_code: 'MODEL_TIMEOUT',
+              },
+            },
+          ])
+        : undefined,
+    );
+    render(<App />);
+    expect(await screen.findByText('模型参与')).toBeInTheDocument();
+    expect(screen.getByText(/deepseek · deepseek-chat/)).toBeInTheDocument();
+    expect(screen.getByText(/错误 MODEL_TIMEOUT/)).toBeInTheDocument();
+    expect(screen.getByText('模型调用失败')).toBeInTheDocument();
   });
 });
