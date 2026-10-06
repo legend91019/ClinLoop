@@ -677,7 +677,6 @@ class AgentRunRepository:
             "tool_calls": [t.model_dump(mode="json") for t in run.tool_calls],
             "finding_ids": list(run.finding_ids),
             "candidate_state_changes": dict(run.candidate_state_changes),
-            "trace_metadata": dict(run.trace_metadata),
             "stop_reason": run.stop_reason.value if run.stop_reason else None,
             "started_at": run.started_at,
             "finished_at": run.finished_at,
