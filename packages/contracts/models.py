@@ -312,6 +312,7 @@ class AgentRun(StrictModel):
     tool_calls: list[ToolCall] = Field(default_factory=list)
     finding_ids: list[NonEmptyStr] = Field(default_factory=list)
     candidate_state_changes: dict[str, str] = Field(default_factory=dict)
+    trace_metadata: dict[str, str | int | float] = Field(default_factory=dict)
     stop_reason: StopReason | None = None
     started_at: AwareDatetime = Field(default_factory=utcnow)
     finished_at: AwareDatetime | None = None
