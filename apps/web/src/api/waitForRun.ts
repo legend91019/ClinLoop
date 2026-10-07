@@ -25,7 +25,11 @@ function pause(ms: number, signal: AbortSignal): Promise<void> {
 export async function waitForAgentRun(
   eventId: string,
   loadRuns: LoadRuns,
-  options: { attempts?: number; intervalMs?: number; signal?: AbortSignal } = {},
+  options: {
+    attempts?: number;
+    intervalMs?: number;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<AgentRun | null> {
   const { attempts = 60, intervalMs = 750 } = options;
   const signal = options.signal ?? new AbortController().signal;

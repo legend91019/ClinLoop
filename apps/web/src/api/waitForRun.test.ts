@@ -4,10 +4,13 @@ import { waitForAgentRun } from './waitForRun';
 
 describe('waitForAgentRun', () => {
   it('returns only the matching persisted terminal run', async () => {
-    const listRuns = vi.fn().mockResolvedValueOnce([runs[0]]).mockResolvedValueOnce([
-      runs[0],
-      { ...runs[0], run_id: 'RUN-NEW', trigger_event_id: 'EVT-NEW' },
-    ]);
+    const listRuns = vi
+      .fn()
+      .mockResolvedValueOnce([runs[0]])
+      .mockResolvedValueOnce([
+        runs[0],
+        { ...runs[0], run_id: 'RUN-NEW', trigger_event_id: 'EVT-NEW' },
+      ]);
 
     const result = await waitForAgentRun('EVT-NEW', listRuns, {
       attempts: 2,
@@ -19,13 +22,24 @@ describe('waitForAgentRun', () => {
   });
 
   it('waits for a terminal stop reason', async () => {
-    const pending = { ...runs[0], trigger_event_id: 'EVT-NEW', stop_reason: null };
+    const pending = {
+      ...runs[0],
+      trigger_event_id: 'EVT-NEW',
+      stop_reason: null,
+    };
     const complete = { ...pending, stop_reason: 'MODEL_ERROR' };
-    const listRuns = vi.fn().mockResolvedValueOnce([pending]).mockResolvedValueOnce([complete]);
+    const listRuns = vi
+      .fn()
+      .mockResolvedValueOnce([pending])
+      .mockResolvedValueOnce([complete]);
 
     expect(
-      (await waitForAgentRun('EVT-NEW', listRuns, { attempts: 2, intervalMs: 0 }))
-        ?.stop_reason,
+      (
+        await waitForAgentRun('EVT-NEW', listRuns, {
+          attempts: 2,
+          intervalMs: 0,
+        })
+      )?.stop_reason,
     ).toBe('MODEL_ERROR');
   });
 

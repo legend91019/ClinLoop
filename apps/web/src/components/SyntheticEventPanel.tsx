@@ -1,18 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
+import { waitForAgentRun } from '../api/waitForRun';
 import type { TimelineEntry } from '../api/types';
 
 export default function SyntheticEventPanel({
   patient,
   timeline,
+  onRefresh,
 }: {
   patient: string;
   timeline?: TimelineEntry[];
+  onRefresh: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [submittedLabId, setSubmittedLabId] = useState('');
   const [submittedProgress, setSubmittedProgress] = useState(false);
+  const activeWait = useRef<AbortController | null>(null);
+  useEffect(() => () => activeWait.current?.abort(), []);
   if (patient !== 'P-1001') return null;
   const labEventId =
     submittedLabId ||
@@ -33,6 +38,9 @@ export default function SyntheticEventPanel({
   async function submit(kind: 'note' | 'lab' | 'progress' | 'susceptibility') {
     setBusy(true);
     setMessage('');
+    let acceptedEventId = '';
+    const controller = new AbortController();
+    activeWait.current = controller;
     try {
       const result =
         kind === 'note'
@@ -42,6 +50,8 @@ export default function SyntheticEventPanel({
             : kind === 'progress'
               ? await api.submitSyntheticProgress(labEventId)
               : await api.submitSyntheticSusceptibility();
+      if (controller.signal.aborted) return;
+      acceptedEventId = result.event_id;
       if (kind === 'lab') setSubmittedLabId(result.event_id);
       if (kind === 'progress') setSubmittedProgress(true);
       const labels = {
@@ -51,14 +61,44 @@ export default function SyntheticEventPanel({
         susceptibility: '药敏',
       };
       setMessage(
-        `${labels[kind]}事件已接收：${result.event_id}。请等 Worker 处理后点击上方刷新按钮，查看 Agent 运行轨迹。`,
+        `${labels[kind]}事件已接收：${result.event_id}。正在等待 Agent 处理…`,
       );
+      const run = await waitForAgentRun(
+        result.event_id,
+        (signal) => api.listPatientRuns(patient, signal),
+        { signal: controller.signal },
+      );
+      onRefresh();
+      if (!run) {
+        setMessage(
+          `${labels[kind]}事件已接收，但等待 Agent 处理超时。请检查 Worker 状态后刷新。`,
+        );
+      } else if (run.stop_reason === 'MODEL_ERROR') {
+        const errorCode = run.trace_metadata?.error_code;
+        setMessage(
+          `${labels[kind]}事件已接收；Agent 处理失败${errorCode ? `（${errorCode}）` : ''}。请检查 Worker 和运行轨迹，勿直接重复发送。`,
+        );
+      } else {
+        setMessage(
+          `${labels[kind]}事件已接收；Agent 已处理，页面数据已自动刷新。`,
+        );
+      }
     } catch (error) {
+      if (
+        controller.signal.aborted ||
+        (error instanceof Error && error.name === 'AbortError')
+      )
+        return;
+      if (acceptedEventId) onRefresh();
+      const detail = error instanceof Error ? error.message : '请求失败';
       setMessage(
-        error instanceof Error ? error.message : '事件发送失败，请重试',
+        acceptedEventId
+          ? `事件已接收，但无法查询 Agent 处理状态：${detail}`
+          : detail,
       );
     } finally {
-      setBusy(false);
+      if (activeWait.current === controller) activeWait.current = null;
+      if (!controller.signal.aborted) setBusy(false);
     }
   }
 
@@ -67,9 +107,8 @@ export default function SyntheticEventPanel({
       <div>
         <strong>试用 Agent 事件链</strong>
         <p>
-          按顺序发送查房、血培养、医生确认、药敏四个合成事件。每步等待 Worker
-          处理后点击上方刷新按钮；在任务、缺口和运行轨迹中核对变化。仅用于
-          P-1001。
+          按顺序发送查房、血培养、医生确认、药敏四个合成事件。页面会等待每步
+          Agent 运行完成并自动刷新任务、缺口和轨迹。仅用于 P-1001。
         </p>
       </div>
       <div className="synthetic-event-actions">
