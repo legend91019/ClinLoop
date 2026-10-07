@@ -1,5 +1,42 @@
 # Synthetic workflow evaluation
 
+## Database-backed online evaluation
+
+The older four-gap comparison below is a structured-contract benchmark. Its
+`ClinLoop` row is context-free and does not measure the database-backed Worker.
+For the currently implemented result-follow-up workflow, run:
+
+```powershell
+.venv/Scripts/python.exe -m eval.run_online_eval --output artifacts/eval/online-report.json
+```
+
+This command replays six labeled synthetic cases through fresh SQLite databases,
+the production `process_event` function, read-only tool registry, persisted
+findings, and persisted evidence. It compares `rules` (the Worker's existing
+non-model intent extractor) with an explicitly labeled deterministic `mock`.
+Labels are kept outside event payloads and model context. The report counts
+TP/FP/FN/TN, precision, recall, tool calls, model errors, and whether finding
+evidence resolves to the expected patient and lab source. A provider error on a
+positive case remains a false negative. The committed offline result is an
+**engineering regression measurement**, not a DeepSeek or clinical efficacy
+result. Six synthetic cases cannot establish generalization or time saved.
+
+To run actual DeepSeek inference, explicitly opt in after setting the key in
+the current process environment (never commit it):
+
+```powershell
+$env:DEEPSEEK_API_KEY = Read-Host "DeepSeek API Key" -AsSecureString | ConvertFrom-SecureString -AsPlainText
+.venv/Scripts/python.exe -m eval.run_online_eval --provider deepseek --output artifacts/eval/deepseek-online-local.json
+```
+
+Real mode compares the same `rules` cases with `deepseek`. The output is kept
+local by `.gitignore`. The report stores synthetic case IDs, cohort labels,
+scores, provider kind, and model ID, but no event text, prompts, raw responses,
+or credential. The model is called on every visible event, so six cases consume
+11 API requests. If the model fails, that case is counted rather than dropped.
+The online suite covers only `RESULT_WITHOUT_ACKNOWLEDGEMENT`; it does not
+validate the other three gap families or a handoff draft.
+
 Task11 implements the shared contracts without modifying the existing worker.
 Run from the repository root with Python 3.12:
 

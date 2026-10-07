@@ -155,6 +155,14 @@ python -m eval.run_eval --count 100 --seed 20260928 --output artifacts/eval/repo
 
 默认模型方法使用明确标注的离线 mock，仅验证工程链路。真实模型须显式指定 provider；默认结果不代表 LLM 或 RAG 的效果。详见 [评测说明](eval/README.md)。
 
+数据库支持的在线 Worker 另有一组范围更窄的评测：
+
+```bash
+python -m eval.run_online_eval --output artifacts/eval/online-report.json
+```
+
+它对六个合成随访病例比较现有规则提取器与确定性 MOCK，核查持久化 Finding 的检验来源。需要真实 DeepSeek 时按[评测说明](eval/README.md#database-backed-online-evaluation)显式启用。六例结果只作为工程回归证据，尚不能证明 Agent 的临床效果或节省工作时间。
+
 ## 8. Git / PR 规则
 
 - `main` 是唯一集成分支，**禁止直接 push**。
@@ -178,7 +186,7 @@ python scripts/verify_release.py
 ```
 
 固定 seed 的评测报告位于 `artifacts/eval/report.json`，方法对比位于
-`artifacts/eval/comparison.csv`。演示和架构材料见
+`artifacts/eval/comparison.csv`；数据库支持的在线评测位于 `artifacts/eval/online-report.json`。演示和架构材料见
 [`docs/demo/runbook.md`](docs/demo/runbook.md)、
 [`docs/architecture/system-overview.mmd`](docs/architecture/system-overview.mmd)
 和 [`docs/release/mvp-checklist.md`](docs/release/mvp-checklist.md)。

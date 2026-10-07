@@ -41,46 +41,16 @@ Open `http://127.0.0.1:5173/?patient=P-1001` and choose **最近 720 小时（30
 
 ## DeepSeek Agent run
 
-The default provider is the deterministic `mock`. To exercise the model-backed
-path, copy `.env.example` to `.env` and set the following values locally. Never
-commit the file or paste the key into a shell transcript that will be shared.
+Use [the current local DeepSeek trial guide](../development/deepseek-agent-trial.md).
+It runs API, database Worker and web console against the same SQLite file, so
+Docker and Redis are optional. Enter a new key only in the Worker terminal via
+the masked prompt; do not save it to the repository. The four guided synthetic
+buttons show the note → lab gap → clinician acknowledgement → dependency flow.
 
-```dotenv
-AGENT_PROVIDER=deepseek
-DEEPSEEK_API_KEY=你的本机密钥
-DEEPSEEK_MODEL=deepseek-chat
-EVENT_BUS=redis
-```
-
-Start the durable stack in separate terminals:
-
-```powershell
-docker compose up -d postgres redis
-$env:AGENT_PROVIDER = "deepseek"
-$env:EVENT_BUS = "redis"
-$env:DEEPSEEK_API_KEY = "你的本机密钥"
-uv run uvicorn apps.api.app.main:app --host 127.0.0.1 --port 8000
-```
-
-In another terminal, start the worker:
-
-```powershell
-$env:AGENT_PROVIDER = "deepseek"
-$env:EVENT_BUS = "redis"
-$env:DEEPSEEK_API_KEY = "你的本机密钥"
-uv run python scripts/run_worker.py
-```
-
-Keep the frontend terminal from the previous section running. Submit a synthetic
-event through `http://127.0.0.1:8000/docs`, then refresh the patient workspace.
-The Agent trace shows provider, model, proposal reference, confidence and any
-safe error code. A model error stops the current run and is persisted as
-`MODEL_ERROR`; it is acknowledged by the worker after the error run is stored so
-one poison message cannot block the stream forever.
-
-For a no-Docker local smoke test, use the SQLite demo with `AGENT_PROVIDER=mock`;
-the real provider requires Redis because the durable worker consumes the event
-stream asynchronously.
+For a reproducible online measurement of the database Worker, see
+[the evaluation guide](../../eval/README.md#database-backed-online-evaluation).
+Its default MOCK row does not measure DeepSeek; real inference requires explicit
+`--provider deepseek` opt-in and a locally set key.
 
 ## Docker run
 

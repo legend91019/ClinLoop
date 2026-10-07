@@ -11,6 +11,7 @@ def test_release_dry_run_lists_all_required_gates(capsys) -> None:  # type: igno
         "frontend tests",
         "frontend build",
         "evaluation report",
+        "online evaluation report",
         "demo readiness",
         "security scan",
     ):
