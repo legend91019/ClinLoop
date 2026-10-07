@@ -9,6 +9,7 @@ dist/
 venv/
 .mypy_cache/
 .pytest_cache/
+.pytest-*/
 .ruff_cache/
 .coverage
 .coverage.*
@@ -43,8 +44,10 @@ redis-data/
 # --- Artifacts ---
 artifacts/*
 !artifacts/eval/
+artifacts/eval/*
 !artifacts/eval/report.json
 !artifacts/eval/comparison.csv
+!artifacts/eval/online-report.json
 dist/
 
 # --- Editors / OS ---

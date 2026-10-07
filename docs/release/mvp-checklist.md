@@ -13,6 +13,7 @@
 
 - [x] Fixed seed `20260928`, 100 synthetic trajectories.
 - [x] `artifacts/eval/report.json` and `artifacts/eval/comparison.csv` generated.
+- [x] `artifacts/eval/online-report.json` measures six database-backed synthetic result-follow-up cases with separate rules and MOCK labels.
 - [x] `scripts/check_demo_ready.py` passes the canonical `P-1001` event chain.
 - [x] Backend, frontend, integration, evaluation and security checks pass.
 
@@ -23,3 +24,4 @@
 - No real EHR/FHIR writes or production multi-patient scheduling.
 - Online Worker evidence-backed gap detection currently covers a uniquely matched lab result/response path. The other gap families need online detection and validation before production use.
 - The context-free ClinLoop evaluation adapter abstains and does not measure the database-backed Agent chain or real DeepSeek quality.
+- The online result-follow-up evaluation is a small engineering corpus. Its MOCK row is not real model inference, and no clinician-reviewed effectiveness or time-savings claim is supported yet.

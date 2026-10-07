@@ -38,6 +38,17 @@ def _commands() -> list[tuple[str, list[str]]]:
                 "artifacts/eval/comparison.csv",
             ],
         ),
+        (
+            "online evaluation report",
+            [
+                python,
+                "-m",
+                "eval.run_online_eval",
+                "--assert-regression",
+                "--output",
+                "artifacts/eval/online-report.json",
+            ],
+        ),
         ("demo readiness", [python, "scripts/check_demo_ready.py"]),
         ("security scan", [python, "scripts/verify_release.py", "--security-only"]),
     ]

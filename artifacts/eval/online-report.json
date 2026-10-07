@@ -1,0 +1,205 @@
+{
+  "case_count": 6,
+  "limitations": [
+    "Small synthetic engineering corpus; no clinical effectiveness claim.",
+    "Rules uses the production Worker with no model intent proposal.",
+    "Mock is deterministic test code, not LLM inference.",
+    "Only RESULT_WITHOUT_ACKNOWLEDGEMENT is assessed online.",
+    "Provider failures remain in the recall denominator."
+  ],
+  "methods": {
+    "mock": {
+      "cases": [
+        {
+          "alert_count": 1,
+          "case_id": "CASE-001",
+          "cohort": "direct_zh",
+          "evidence_valid": true,
+          "expected_alert": true,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 0,
+          "tool_calls": 2,
+          "tp": 1
+        },
+        {
+          "alert_count": 1,
+          "case_id": "CASE-002",
+          "cohort": "paraphrase_zh",
+          "evidence_valid": true,
+          "expected_alert": true,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 0,
+          "tool_calls": 2,
+          "tp": 1
+        },
+        {
+          "alert_count": 1,
+          "case_id": "CASE-003",
+          "cohort": "direct_en",
+          "evidence_valid": true,
+          "expected_alert": true,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 0,
+          "tool_calls": 2,
+          "tp": 1
+        },
+        {
+          "alert_count": 1,
+          "case_id": "CASE-004",
+          "cohort": "unrelated_note",
+          "evidence_valid": true,
+          "expected_alert": false,
+          "fn": 0,
+          "fp": 1,
+          "model_errors": 0,
+          "tn": 0,
+          "tool_calls": 2,
+          "tp": 0
+        },
+        {
+          "alert_count": 0,
+          "case_id": "CASE-005",
+          "cohort": "unrelated_lab",
+          "evidence_valid": false,
+          "expected_alert": false,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 1,
+          "tool_calls": 2,
+          "tp": 0
+        },
+        {
+          "alert_count": 0,
+          "case_id": "CASE-006",
+          "cohort": "no_note",
+          "evidence_valid": false,
+          "expected_alert": false,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 1,
+          "tool_calls": 2,
+          "tp": 0
+        }
+      ],
+      "metrics": {
+        "cases": 6,
+        "fn": 0,
+        "fp": 1,
+        "model_errors": 0,
+        "precision": 0.75,
+        "recall": 1.0,
+        "tn": 2,
+        "tool_calls": 12,
+        "tp": 3
+      },
+      "model": null,
+      "provider_kind": "mock"
+    },
+    "rules": {
+      "cases": [
+        {
+          "alert_count": 1,
+          "case_id": "CASE-001",
+          "cohort": "direct_zh",
+          "evidence_valid": true,
+          "expected_alert": true,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 0,
+          "tool_calls": 2,
+          "tp": 1
+        },
+        {
+          "alert_count": 0,
+          "case_id": "CASE-002",
+          "cohort": "paraphrase_zh",
+          "evidence_valid": false,
+          "expected_alert": true,
+          "fn": 1,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 0,
+          "tool_calls": 0,
+          "tp": 0
+        },
+        {
+          "alert_count": 1,
+          "case_id": "CASE-003",
+          "cohort": "direct_en",
+          "evidence_valid": true,
+          "expected_alert": true,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 0,
+          "tool_calls": 2,
+          "tp": 1
+        },
+        {
+          "alert_count": 0,
+          "case_id": "CASE-004",
+          "cohort": "unrelated_note",
+          "evidence_valid": false,
+          "expected_alert": false,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 1,
+          "tool_calls": 0,
+          "tp": 0
+        },
+        {
+          "alert_count": 0,
+          "case_id": "CASE-005",
+          "cohort": "unrelated_lab",
+          "evidence_valid": false,
+          "expected_alert": false,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 1,
+          "tool_calls": 0,
+          "tp": 0
+        },
+        {
+          "alert_count": 0,
+          "case_id": "CASE-006",
+          "cohort": "no_note",
+          "evidence_valid": false,
+          "expected_alert": false,
+          "fn": 0,
+          "fp": 0,
+          "model_errors": 0,
+          "tn": 1,
+          "tool_calls": 0,
+          "tp": 0
+        }
+      ],
+      "metrics": {
+        "cases": 6,
+        "fn": 1,
+        "fp": 0,
+        "model_errors": 0,
+        "precision": 1.0,
+        "recall": 0.6666666666666666,
+        "tn": 3,
+        "tool_calls": 4,
+        "tp": 2
+      },
+      "model": null,
+      "provider_kind": "rules"
+    }
+  },
+  "schema_version": "1.0",
+  "scope": "result_followup_only",
+  "synthetic_only": true
+}
