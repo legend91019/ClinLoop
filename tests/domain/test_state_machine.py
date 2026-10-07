@@ -98,6 +98,7 @@ def test_resolved_is_terminal_and_cannot_move() -> None:
     [
         (LoopState.IN_PROGRESS, LoopState.RESULT_AVAILABLE),
         (LoopState.ORDERED, LoopState.RESULT_AVAILABLE),
+        (LoopState.WAITING_EVENT, LoopState.RESULT_AVAILABLE),
         (LoopState.RESULT_AVAILABLE, LoopState.ACKNOWLEDGED),
     ],
 )
@@ -114,6 +115,7 @@ def test_result_and_acknowledgement_require_evidence(
     "current,requested",
     [
         (LoopState.IN_PROGRESS, LoopState.RESULT_AVAILABLE),
+        (LoopState.WAITING_EVENT, LoopState.RESULT_AVAILABLE),
         (LoopState.RESULT_AVAILABLE, LoopState.ACKNOWLEDGED),
     ],
 )

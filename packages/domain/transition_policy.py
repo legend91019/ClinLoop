@@ -92,6 +92,8 @@ def _build_allowed_transitions() -> dict[LoopState, frozenset[LoopState]]:
             )
             continue
         allowed[state].update({LoopState.PLANNED, LoopState.IN_PROGRESS})
+        if state is LoopState.WAITING_EVENT:
+            allowed[state].add(LoopState.RESULT_AVAILABLE)
         if state is LoopState.CONFLICTED:
             # A conflict resolves by re-acknowledging or escalating to review.
             allowed[state].add(LoopState.PENDING_REVIEW)
@@ -131,6 +133,7 @@ SYSTEM_DRIVEN_EDGES: frozenset[tuple[LoopState, LoopState]] = frozenset(
         (LoopState.ORDERED, LoopState.RESULT_AVAILABLE),
         (LoopState.ACTION_REQUESTED, LoopState.RESULT_AVAILABLE),
         (LoopState.IN_PROGRESS, LoopState.RESULT_AVAILABLE),
+        (LoopState.WAITING_EVENT, LoopState.RESULT_AVAILABLE),
         (LoopState.IN_PROGRESS, LoopState.WAITING_EVENT),
         (LoopState.RESULT_AVAILABLE, LoopState.WAITING_EVENT),
     }

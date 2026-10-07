@@ -155,7 +155,23 @@ class DeepSeekProvider:
                         "For a note requesting blood culture result follow-up, "
                         "use intent_type FOLLOW_RESULT, expected_evidence "
                         "['blood_culture_result'], and waiting_for "
-                        "['LAB_RESULT_CREATED']. Preserve patient_id exactly."
+                        "['LAB_RESULT_CREATED']. Preserve patient_id exactly. "
+                        "Return exactly one JSON object with every field in this example "
+                        "and no additional fields: "
+                        '{"patient_id":"P-1001","intent_type":"FOLLOW_RESULT",'
+                        '"goal":"Follow up blood culture result",'
+                        '"rationale":"The note requests result follow-up",'
+                        '"expected_evidence":["blood_culture_result"],'
+                        '"waiting_for":["LAB_RESULT_CREATED"],'
+                        '"priority":"HIGH","confidence":0.8,'
+                        '"evidence_refs":[],"requested_tools":[]}. '
+                        "Replace the example patient_id with the exact event patient_id. "
+                        "evidence_refs may contain only IDs or payload_ref values from "
+                        "recent_events or IDs from visible_evidence; otherwise use []. "
+                        "For a lab result, select get_labs and get_progress_notes. "
+                        "If the event does not support an intent, use null intent_type, "
+                        "empty expected_evidence and waiting_for arrays, and explain uncertainty "
+                        "in rationale. Never invent evidence references."
                     ),
                 },
                 {
@@ -164,6 +180,8 @@ class DeepSeekProvider:
                 },
             ],
             "response_format": {"type": "json_object"},
+            "thinking": {"type": "disabled"},
+            "max_tokens": 1200,
             "stream": False,
         }
         started = time.monotonic()
@@ -187,7 +205,11 @@ class DeepSeekProvider:
                 self._set_metadata(latency_ms, error_code="MODEL_RESPONSE_TOO_LARGE")
                 raise ModelProviderError("MODEL_RESPONSE_TOO_LARGE")
             result = response.json()
-            message = result["choices"][0]["message"]
+            choice = result["choices"][0]
+            if choice.get("finish_reason") == "length":
+                self._set_metadata(latency_ms, error_code="MODEL_TRUNCATED_RESPONSE")
+                raise ModelProviderError("MODEL_TRUNCATED_RESPONSE")
+            message = choice["message"]
             if message.get("refusal"):
                 self._set_metadata(latency_ms, error_code="MODEL_REFUSAL")
                 raise ModelProviderError("MODEL_REFUSAL")

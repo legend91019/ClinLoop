@@ -38,8 +38,8 @@ class Settings(BaseSettings):
     agent_step_budget: int = 8
     agent_timeout_seconds: int = 30
     deepseek_api_key: str = ""
-    deepseek_base_url: str = "https://api.deepseek.com/v1"
-    deepseek_model: str = "deepseek-chat"
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_model: str = "deepseek-flash"
 
     # --- api ---
     app_name: str = "ClinLoop API"

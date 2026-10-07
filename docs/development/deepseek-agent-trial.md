@@ -1,94 +1,71 @@
 # DeepSeek Agent 本地试用
 
-这条路径使用合成病例 `P-1001`，把 API、Redis、Worker、DeepSeek 和医生工作台串起来。
-不要把真实患者信息或 API Key 写进仓库，也不要把 Key 发到聊天中。
+使用全新的合成病例数据库体验 `API → Worker → DeepSeek → Guard → 医生审核 → 交班草稿`。只发送固定合成事件；不要输入真实患者资料。DeepSeek 密钥只需放在 Worker 终端的环境变量中，不写入仓库或 `.env`。
 
-## 1. 准备本地环境
+## 不使用 Docker：SQLite + 数据库 Worker
 
-在仓库根目录执行：
-
-```powershell
-Copy-Item .env.example .env
-```
-
-编辑 `.env`，填入本地配置：
-
-```dotenv
-DATABASE_URL=postgresql+psycopg://clinloop:clinloop@localhost:5432/clinloop
-REDIS_URL=redis://localhost:6379/0
-EVENT_BUS=redis
-AGENT_PROVIDER=deepseek
-DEEPSEEK_API_KEY=你的本地Key
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
-```
-
-DeepSeek 失败时，Agent 会停止当前运行并记录安全错误码，不会自动切回规则模式，也不会提交新的 Finding 或状态变化。
-`.env` 保留在本机，不要把 Key 提交到 Git 或发到聊天。更新旧数据库时必须执行本节的 `alembic upgrade head`，以创建事件待发布表。
-
-## 2. 启动服务
+以下命令都在仓库根目录执行。先安装依赖，并创建一份**专用的新数据库**：
 
 ```powershell
-docker compose up -d postgres redis
 uv sync --group dev
-alembic upgrade head
-python -m packages.fixtures.seed
+npm --prefix apps/web ci
+$env:DATABASE_URL="sqlite+pysqlite:///clinloop-local.sqlite3"
+uv run python scripts/init_local_trial.py
 ```
 
-终端一：
+`init_local_trial.py` 只创建合成患者 `P-1001`、就诊 `ENC-2001` 和空表，不预填演示任务。重复运行不会清空数据；想从头体验时，改用另一个尚不存在的 SQLite 文件名，并在三个终端保持同一 `DATABASE_URL`。
+
+打开三个 PowerShell 终端，每个终端都进入仓库根目录。
+
+**终端一：API**
 
 ```powershell
-$env:DATABASE_URL="postgresql+psycopg://clinloop:clinloop@localhost:5432/clinloop"
-$env:REDIS_URL="redis://localhost:6379/0"
-$env:EVENT_BUS="redis"
-$env:AGENT_PROVIDER="deepseek"
+$env:DATABASE_URL="sqlite+pysqlite:///clinloop-local.sqlite3"
+$env:EVENT_BUS="database"
 uv run uvicorn apps.api.app.main:app --host 127.0.0.1 --port 8000
 ```
 
-终端二：
+**终端二：真实 DeepSeek Worker**
 
 ```powershell
-$env:DATABASE_URL="postgresql+psycopg://clinloop:clinloop@localhost:5432/clinloop"
-$env:REDIS_URL="redis://localhost:6379/0"
-$env:EVENT_BUS="redis"
+$env:DATABASE_URL="sqlite+pysqlite:///clinloop-local.sqlite3"
+$env:EVENT_BUS="database"
 $env:AGENT_PROVIDER="deepseek"
+$env:DEEPSEEK_MODEL="deepseek-flash"
+$env:DEEPSEEK_API_KEY = Read-Host "DeepSeek API Key" -AsSecureString | ConvertFrom-SecureString -AsPlainText
 uv run python scripts/run_worker.py
 ```
 
-终端三：
+PowerShell 会在输入密钥时隐藏字符。请使用新密钥；曾在聊天中发出的密钥应在 DeepSeek 控制台撤销并更换。不要把含密钥的终端输出、环境快照或数据库提交到 Git。
+
+**终端三：医生工作台**
 
 ```powershell
 $env:VITE_API_BASE_URL="http://127.0.0.1:8000"
 npm --prefix apps/web run dev -- --host 127.0.0.1
 ```
 
-打开：
+打开 [工作台](http://127.0.0.1:5173/?patient=P-1001)。项目要求 Python 3.12+。
 
-- Swagger：http://127.0.0.1:8000/docs
-- 医生工作台：http://127.0.0.1:5173/?patient=P-1001
+## 页面上按顺序体验
 
-## 3. 在页面体验完整链路
+在 **试用 Agent 事件链** 中，每发一条事件，先等 Worker 终端处理，再点页面顶部的刷新按钮：
 
-打开 `http://127.0.0.1:5173/?patient=P-1001`。在 **试用 Agent 事件链** 中：
+1. **查房事件**：DeepSeek 解析随访意图，Agent 创建等待血培养的 Loop。
+2. **血培养结果**：Agent 调用只读 `get_labs` / `get_progress_notes`，Guard 核对来源与关联，把 Loop 推进到 `RESULT_AVAILABLE`，显示待医生审核的 Finding。点缺口中的证据可以查看源事件。
+3. **医生确认**：合成医生记录明确引用上一步的检验事件；原 Loop 变成 `ACKNOWLEDGED`，生成等待药敏的依赖 Loop。
+4. **药敏结果**：新结果关联依赖 Loop，并产生新的待审核 Finding。
 
-1. 点 **发送合成查房事件**。API 返回“已接收”后，等 Worker 处理，再刷新页面。**Agent 运行轨迹** 默认显示该患者全部运行；检查最新运行的模型、提案、工具调用和错误码，并在 **未闭环任务** 中确认新增等待检验的 Loop。
-2. 点 **发送合成检验结果**，等 Worker 处理并刷新。新运行应关联刚建的 Loop，出现 `get_labs` 与 `get_progress_notes` 工具记录。若结果匹配、尚无明确医生确认，**流程缺口**会出现待审核的结果响应 Finding。医生可打开证据并接受或驳回。
+在 **Agent 运行轨迹** 中检查 `deepseek · deepseek-flash`、前次运行引用、只读工具、停止原因。页面显示“事件已接收”仅代表 API 已入库，Worker 和模型调用是异步的。每一步只发一次；重复建多个相同随访任务会造成结果关联歧义，Agent 会保守停止告警。
 
-请先等第一条事件处理完成，再发第二条；连续创建多条相同的查房任务会使检验与任务的关联不唯一，Agent 会保守地停止告警。页面中的“已接收”只表示事件入库，Worker 处理与 DeepSeek 调用是异步的。这个入口只发送固定合成数据，不接受自由输入或真实病历。
+填写就诊 ID `ENC-2001` 和合成医生身份后，可在 **交接草稿** 手动创建草稿。草稿应带入尚未关闭的高优先级任务、已核实证据和待审核缺口；存在待审核 Finding 时不得封存。医生接受或驳回 Finding 会追加审计记录。
 
-也可在 Swagger 的 `POST /api/v1/events` 手动提交相同结构的合成事件。每条事件使用新的 `event_id` 与当前时间；旧时间会按历史事件处理，不一定能关联新任务。Worker 完成后，在运行轨迹中检查 `deepseek · deepseek-chat`、提案引用、模型摘要和停止原因。模型只产生候选意图和计划，Guard 与医生审核仍控制高风险工作流变化。
+API 文档在 [Swagger](http://127.0.0.1:8000/docs)。数据库 Worker 逐个消费 API 的事务性 outbox；停止 Worker 后新事件会留待下次启动处理。此模式只适合本机单 Worker 试用。
 
-API 会把事件与待发布记录一起提交。如果 Redis 暂时不可用，Worker 恢复后会补发待发布事件；Redis 已投递而 Worker 中断的 pending 消息也会被重新领取。重复投递按事件 ID 幂等处理。请保持 Worker 运行，以免事件一直停留在待处理状态。
+## Docker / Redis 模式
 
-当前在线 Worker 的确定性缺口核对只覆盖**已关联检验结果 → 医生响应**。工具调用能证明检索动作和来源范围，但模型/工具结果仍需医生审核。本流程是工程演示，不是临床效率或安全性验证；其他缺口类别、真实 EHR 接口、多患者队列和线上 DeepSeek 的质量评估仍待完成。
+已有 PostgreSQL 和 Redis 时，仍可按仓库的 Docker 配置运行。设置 `EVENT_BUS=redis`、PostgreSQL `DATABASE_URL`、`REDIS_URL`，执行 `alembic upgrade head`，分别启动 API、`scripts/run_worker.py` 和前端。Redis 模式支持 pending 消息恢复。若要体验**空病例的在线流程**，不要运行预填全套 Loop/Finding 的 `packages.fixtures.seed`；它用于固定演示与评测。
 
-## 4. 不使用 Docker 的离线模式
+## 范围
 
-如果 Docker Desktop 未启动，仍可使用 `sqlite + mock` 运行既有演示：
-
-```powershell
-$env:DATABASE_URL="sqlite+pysqlite:///demo.sqlite3"
-uv run python scripts/run_demo.py --patient P-1001 --database-url sqlite+pysqlite:///demo.sqlite3 --no-review
-```
-
-这个模式验证工作流和 UI，但不会调用 DeepSeek，也不会提供 API → Redis → Worker 的真实链路。
+这条在线路径已验证检验结果与医生确认的连续性、依赖任务和交班草稿。其他缺口类别仍主要在合成演示和离线评测中；真实 EHR、身份认证、多 Worker 并发与临床效率评估尚未完成。所有结果仅证明工程链路运行，不能作为临床有效性结论。

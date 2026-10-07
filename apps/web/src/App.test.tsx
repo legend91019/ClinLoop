@@ -242,4 +242,40 @@ describe('doctor workspace', () => {
     });
     expect(await screen.findByText(/检验事件已接收/)).toBeInTheDocument();
   });
+  it('links the clinician response to the lab and sends a dependent result', async () => {
+    const requests = serve((request) =>
+      request.method === 'POST' && request.url.pathname.endsWith('/events')
+        ? json({ event_id: request.body?.event_id, accepted: true }, 202)
+        : undefined,
+    );
+    render(<App />);
+    const acknowledge = screen.getByRole('button', {
+      name: '发送合成医生确认',
+    });
+    expect(acknowledge).toBeDisabled();
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成检验结果' }),
+    );
+    const lab = requests.find(
+      (request) => request.body?.event_type === 'LAB_RESULT_CREATED',
+    );
+    expect(lab?.body?.event_id).toBeTruthy();
+    await userEvent.click(acknowledge);
+    const progress = requests.find(
+      (request) => request.body?.event_type === 'PROGRESS_NOTE_CREATED',
+    );
+    expect(progress?.body).toMatchObject({
+      payload: {
+        acknowledges_event_id: lab?.body?.event_id,
+        creates_dependency: 'susceptibility_result',
+      },
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成药敏结果' }),
+    );
+    expect(requests.at(-1)?.body).toMatchObject({
+      event_type: 'LAB_RESULT_CREATED',
+      payload: { panel: 'susceptibility_result' },
+    });
+  });
 });

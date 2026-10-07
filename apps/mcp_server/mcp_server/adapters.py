@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from apps.api.app.repositories import (
@@ -13,8 +14,9 @@ from packages.contracts import EventType
 
 
 class RepositoryTools:
-    def __init__(self, session) -> None:
+    def __init__(self, session, *, as_of: datetime | None = None) -> None:
         self.session = session
+        self.as_of = as_of
 
     def _check(self, patient_id: str) -> None:
         if not PatientRepository(self.session).exists(patient_id):
@@ -26,9 +28,16 @@ class RepositoryTools:
 
     def get_recent_events(self, *, patient_id: str, hours: int = 24) -> list[dict[str, Any]]:
         self._check(patient_id)
+        return [event.model_dump(mode="json") for event in self._timeline(patient_id, hours)]
+
+    def _timeline(self, patient_id: str, hours: int) -> list:
+        repository = ClinicalEventRepository(self.session)
+        if self.as_of is None:
+            return repository.timeline(patient_id, hours=hours)
         return [
-            event.model_dump(mode="json")
-            for event in ClinicalEventRepository(self.session).timeline(patient_id, hours=hours)
+            event
+            for event in repository.timeline(patient_id, hours=hours, now=self.as_of)
+            if event.source_time <= self.as_of
         ]
 
     def get_patient_evidence(self, *, patient_id: str) -> list[dict[str, Any]]:
@@ -36,6 +45,7 @@ class RepositoryTools:
         return [
             node.model_dump(mode="json")
             for node in EvidenceRepository(self.session).list_for_patient(patient_id)
+            if self.as_of is None or node.observed_at <= self.as_of
         ]
 
     def _event_view(
@@ -46,7 +56,7 @@ class RepositoryTools:
         hours: int = 720,
     ) -> list[dict[str, Any]]:
         self._check(patient_id)
-        events = ClinicalEventRepository(self.session).timeline(patient_id, hours=hours)
+        events = self._timeline(patient_id, hours)
         return [
             event.model_dump(mode="json") for event in events if event.event_type in event_types
         ]
@@ -82,7 +92,10 @@ class RepositoryTools:
     def get_handoff(self, *, patient_id: str) -> dict[str, Any] | None:
         self._check(patient_id)
         reports = HandoffRepository(self.session).list_for_patient(patient_id)
-        return reports[-1].model_dump(mode="json") if reports else None
+        visible = [
+            report for report in reports if self.as_of is None or report.created_at <= self.as_of
+        ]
+        return visible[-1].model_dump(mode="json") if visible else None
 
     def record_review_decision(self, **kwargs):
         from apps.api.app.services.review_service import review_finding
