@@ -143,9 +143,10 @@ export class ApiClient {
       { signal },
     );
   }
-  submitSyntheticNote() {
+  submitSyntheticNote(
+    suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  ) {
     const now = new Date().toISOString();
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     return this.request<{ event_id: string; accepted: boolean }>('/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -171,9 +172,10 @@ export class ApiClient {
       }),
     });
   }
-  submitSyntheticLab() {
+  submitSyntheticLab(
+    suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  ) {
     const now = new Date().toISOString();
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     return this.request<{ event_id: string; accepted: boolean }>('/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -197,11 +199,13 @@ export class ApiClient {
       }),
     });
   }
-  submitSyntheticProgress(labEventId: string) {
+  submitSyntheticProgress(
+    labEventId: string,
+    suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  ) {
     if (!labEventId.startsWith('EVT-DEMO-LAB-'))
       throw new ApiError(0, '请先发送本次合成血培养结果');
     const now = new Date().toISOString();
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     return this.request<{ event_id: string; accepted: boolean }>('/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -226,9 +230,10 @@ export class ApiClient {
       }),
     });
   }
-  submitSyntheticSusceptibility() {
+  submitSyntheticSusceptibility(
+    suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  ) {
     const now = new Date().toISOString();
-    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     return this.request<{ event_id: string; accepted: boolean }>('/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

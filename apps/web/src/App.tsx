@@ -56,6 +56,7 @@ function Workspace({
     useState('手动输入或从原始证据中选用');
   const [selectedTrace, setSelectedTrace] = useState('');
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
+  const [traceRevision, setTraceRevision] = useState(0);
   const selected = loops.data?.some((loop) => loop.loop_id === selectedTrace)
     ? selectedTrace
     : '';
@@ -173,8 +174,14 @@ function Workspace({
         <small>每一步，都有据可循</small>
       </div>
       <SyntheticEventPanel
+        key={patient}
         patient={patient}
-        timeline={timeline.data?.entries}
+        onRefresh={() => {
+          timeline.retry();
+          loops.retry();
+          findings.retry();
+          setTraceRevision((value) => value + 1);
+        }}
       />
       <div className="workspace-grid">
         <PatientTimeline
@@ -190,6 +197,7 @@ function Workspace({
           onReviewed={reviewed}
         />
         <AgentTracePanel
+          key={`${patient}:${traceRevision}`}
           patient={patient}
           loops={loops}
           selected={selected}

@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
@@ -213,6 +213,191 @@ describe('doctor workspace', () => {
     });
     expect(await screen.findByText(/事件已接收/)).toBeInTheDocument();
   });
+  it('automatically refreshes patient views after the submitted Agent run is persisted', async () => {
+    let submitted = '';
+    let readsAfterPost = 0;
+    const requests = serve((request) => {
+      if (
+        request.method === 'POST' &&
+        request.url.pathname.endsWith('/events')
+      ) {
+        submitted = String(request.body?.event_id);
+        return json({ event_id: submitted, accepted: true }, 202);
+      }
+      if (request.url.pathname.endsWith('/runs') && submitted) {
+        readsAfterPost += 1;
+        return json(
+          readsAfterPost === 1
+            ? runs
+            : [
+                ...runs,
+                {
+                  ...runs[0],
+                  run_id: 'RUN-AUTO-REFRESH',
+                  trigger_event_id: submitted,
+                  stop_reason: 'WAITING_EXTERNAL_EVENT',
+                },
+              ],
+        );
+      }
+      return undefined;
+    });
+    render(<App />);
+    await screen.findByText('检验系统');
+    const before = requests.filter((r) =>
+      r.url.pathname.endsWith('/timeline'),
+    ).length;
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成查房事件' }),
+    );
+
+    expect(await screen.findByText(/正在等待 Agent 处理/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Agent 已处理/, {}, { timeout: 4000 }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        requests.filter((r) => r.url.pathname.endsWith('/timeline')).length,
+      ).toBeGreaterThan(before),
+    );
+    expect(await screen.findByText('RUN-AUTO-REFRESH')).toBeInTheDocument();
+  });
+  it('shows the stored model error after its run is persisted', async () => {
+    let submitted = '';
+    serve((request) => {
+      if (
+        request.method === 'POST' &&
+        request.url.pathname.endsWith('/events')
+      ) {
+        submitted = String(request.body?.event_id);
+        return json({ event_id: submitted, accepted: true }, 202);
+      }
+      if (request.url.pathname.endsWith('/runs') && submitted)
+        return json([
+          {
+            ...runs[0],
+            run_id: 'RUN-MODEL-ERROR',
+            trigger_event_id: submitted,
+            stop_reason: 'MODEL_ERROR',
+            trace_metadata: {
+              provider: 'deepseek',
+              model: 'deepseek-flash',
+              error_code: 'MODEL_TIMEOUT',
+            },
+          },
+        ]);
+      return undefined;
+    });
+    render(<App />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成查房事件' }),
+    );
+
+    expect(
+      await screen.findByText(/Agent 处理失败.*MODEL_TIMEOUT/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '发送合成查房事件' }),
+    ).toBeEnabled();
+  });
+  it('cancels an old patient trial wait when the workspace switches patient', async () => {
+    let submitted = '';
+    let releaseRun!: (response: Response) => void;
+    const pendingRun = new Promise<Response>((resolve) => {
+      releaseRun = resolve;
+    });
+    const requests = serve((request) => {
+      if (
+        request.method === 'POST' &&
+        request.url.pathname.endsWith('/events')
+      ) {
+        submitted = String(request.body?.event_id);
+        return json({ event_id: submitted, accepted: true }, 202);
+      }
+      if (request.url.pathname.endsWith('/runs') && submitted)
+        return pendingRun;
+      if (request.url.pathname.includes('/P-2002/'))
+        return request.url.pathname.endsWith('/timeline')
+          ? json({ ...timeline, patient_id: 'P-2002', entries: [], count: 0 })
+          : json([]);
+      return undefined;
+    });
+    render(<App />);
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成查房事件' }),
+    );
+    await waitFor(() =>
+      expect(
+        requests.some(
+          (r) => r.url.pathname.includes('/P-1001/runs') && r.signal,
+        ),
+      ).toBe(true),
+    );
+    await userEvent.clear(screen.getByLabelText('患者 ID'));
+    await userEvent.type(screen.getByLabelText('患者 ID'), 'P-2002');
+    await userEvent.click(screen.getByRole('button', { name: '加载患者' }));
+    expect(await screen.findByText('此时间范围内暂无事件')).toBeInTheDocument();
+    const newPatientReads = requests.filter((r) =>
+      r.url.pathname.includes('/P-2002/timeline'),
+    ).length;
+
+    await act(async () =>
+      releaseRun(
+        json([
+          { ...runs[0], trigger_event_id: submitted, run_id: 'RUN-OLD-TRIAL' },
+        ]),
+      ),
+    );
+
+    expect(
+      requests.find((r) => r.url.pathname.includes('/P-1001/runs') && r.signal)
+        ?.signal?.aborted,
+    ).toBe(true);
+    expect(
+      requests.filter((r) => r.url.pathname.includes('/P-2002/timeline'))
+        .length,
+    ).toBe(newPatientReads);
+    expect(screen.queryByText('RUN-OLD-TRIAL')).not.toBeInTheDocument();
+  });
+  it('does not start polling after a delayed event POST finishes for the previous patient', async () => {
+    let releasePost!: (response: Response) => void;
+    const pendingPost = new Promise<Response>((resolve) => {
+      releasePost = resolve;
+    });
+    const requests = serve((request) => {
+      if (request.method === 'POST' && request.url.pathname.endsWith('/events'))
+        return pendingPost;
+      if (request.url.pathname.includes('/P-2002/'))
+        return request.url.pathname.endsWith('/timeline')
+          ? json({ ...timeline, patient_id: 'P-2002', entries: [], count: 0 })
+          : json([]);
+      return undefined;
+    });
+    render(<App />);
+    await screen.findByText('RUN-1');
+    const initialRunReads = requests.filter((request) =>
+      request.url.pathname.includes('/P-1001/runs'),
+    ).length;
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成查房事件' }),
+    );
+    await userEvent.clear(screen.getByLabelText('患者 ID'));
+    await userEvent.type(screen.getByLabelText('患者 ID'), 'P-2002');
+    await userEvent.click(screen.getByRole('button', { name: '加载患者' }));
+    expect(await screen.findByText('此时间范围内暂无事件')).toBeInTheDocument();
+
+    await act(async () =>
+      releasePost(json({ event_id: 'EVT-OLD-POST', accepted: true }, 202)),
+    );
+
+    expect(
+      requests.filter((request) =>
+        request.url.pathname.includes('/P-1001/runs'),
+      ).length,
+    ).toBe(initialRunReads);
+  });
   it('submits a matching synthetic lab after the note so the evidence check can run', async () => {
     const requests = serve((request) =>
       request.method === 'POST' && request.url.pathname.endsWith('/events')
@@ -243,11 +428,26 @@ describe('doctor workspace', () => {
     expect(await screen.findByText(/检验事件已接收/)).toBeInTheDocument();
   });
   it('links the clinician response to the lab and sends a dependent result', async () => {
-    const requests = serve((request) =>
-      request.method === 'POST' && request.url.pathname.endsWith('/events')
-        ? json({ event_id: request.body?.event_id, accepted: true }, 202)
-        : undefined,
-    );
+    let submitted = '';
+    const requests = serve((request) => {
+      if (
+        request.method === 'POST' &&
+        request.url.pathname.endsWith('/events')
+      ) {
+        submitted = String(request.body?.event_id);
+        return json({ event_id: submitted, accepted: true }, 202);
+      }
+      if (request.url.pathname.endsWith('/runs') && submitted)
+        return json([
+          ...runs,
+          {
+            ...runs[0],
+            run_id: `RUN-${submitted}`,
+            trigger_event_id: submitted,
+          },
+        ]);
+      return undefined;
+    });
     render(<App />);
     const acknowledge = screen.getByRole('button', {
       name: '发送合成医生确认',
@@ -260,6 +460,7 @@ describe('doctor workspace', () => {
       (request) => request.body?.event_type === 'LAB_RESULT_CREATED',
     );
     expect(lab?.body?.event_id).toBeTruthy();
+    await screen.findByText(/检验事件已接收；Agent 已处理/);
     await userEvent.click(acknowledge);
     const progress = requests.find(
       (request) => request.body?.event_type === 'PROGRESS_NOTE_CREATED',
@@ -270,10 +471,17 @@ describe('doctor workspace', () => {
         creates_dependency: 'susceptibility_result',
       },
     });
+    await screen.findByText(/医生确认事件已接收；Agent 已处理/);
     await userEvent.click(
       screen.getByRole('button', { name: '发送合成药敏结果' }),
     );
-    expect(requests.at(-1)?.body).toMatchObject({
+    const susceptibility = requests.find(
+      (request) =>
+        request.body?.payload &&
+        (request.body.payload as Record<string, unknown>).panel ===
+          'susceptibility_result',
+    );
+    expect(susceptibility?.body).toMatchObject({
       event_type: 'LAB_RESULT_CREATED',
       payload: { panel: 'susceptibility_result' },
     });
