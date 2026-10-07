@@ -10,7 +10,9 @@ def test_handle_event_records_a_trace_and_finding() -> None:
     event = next(e for e in main_case_events() if e.event_type is EventType.LAB_RESULT_CREATED)
     runs = AgentRunRepository()
 
-    run = WorkflowAgent(runs=runs).handle_event(event)
+    agent = WorkflowAgent(runs=runs)
+    agent.handle_event(main_case_events()[0])
+    run = agent.handle_event(event)
 
     assert run.is_finished
     assert run.stop_reason is StopReason.REQUIRES_CLINICIAN_REVIEW

@@ -34,6 +34,8 @@ def _commands() -> list[tuple[str, list[str]]]:
                 "20260928",
                 "--output",
                 "artifacts/eval/report.json",
+                "--comparison-output",
+                "artifacts/eval/comparison.csv",
             ],
         ),
         ("demo readiness", [python, "scripts/check_demo_ready.py"]),

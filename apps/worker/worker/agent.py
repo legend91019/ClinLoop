@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
+from hashlib import sha256
+from time import monotonic
+from typing import Any
 
 from apps.api.app.settings import get_settings
+from apps.mcp_server.mcp_server.tools import READ_TOOLS
 from apps.worker.worker.memory import WorkflowMemory
 from apps.worker.worker.model_contracts import AgentContext, AgentProposal
 from apps.worker.worker.planner import plan_for_event
@@ -10,6 +15,7 @@ from apps.worker.worker.policies import ExecutionPolicy
 from apps.worker.worker.providers import ModelProvider, ModelProviderError, build_model_provider
 from apps.worker.worker.repositories import AgentRunRepository
 from apps.worker.worker.skills.intent import extract_clinical_intent
+from apps.worker.worker.verification import has_explicit_ack, match_result_loop
 from packages.contracts import (
     AgentRun,
     AgentStep,
@@ -22,6 +28,7 @@ from packages.contracts import (
     LoopState,
     OpenLoop,
     StopReason,
+    ToolCall,
     new_id,
     utcnow,
 )
@@ -40,13 +47,15 @@ class WorkflowAgent:
     ) -> None:
         self.memory = memory or WorkflowMemory()
         self.runs = runs or AgentRunRepository()
-        self.policy = policy or ExecutionPolicy(max_steps=step_budget)
+        self.policy = policy or ExecutionPolicy(
+            max_steps=step_budget, allowed_tools=frozenset(READ_TOOLS)
+        )
         self.step_budget = self.policy.max_steps
         self.materialize_context = materialize_context
         self.provider = provider or build_model_provider(get_settings())
         self.findings: dict[str, Finding] = {}
 
-    def handle_event(self, event: ClinicalEvent) -> AgentRun:
+    def handle_event(self, event: ClinicalEvent, *, tool_registry: Any | None = None) -> AgentRun:
         self.memory.record_event(event)
         existing = next(
             (
@@ -66,6 +75,7 @@ class WorkflowAgent:
             loop_id=loop_id,
             model_proposal=proposal,
             model_error=model_error,
+            tool_registry=tool_registry,
         )
 
     def _latest_run_for_loop(self, loop_id: str | None) -> AgentRun | None:
@@ -86,6 +96,9 @@ class WorkflowAgent:
         if not self.materialize_context:
             return None, None, None
 
+        if event.event_type is EventType.LAB_RESULT_CREATED and loop_id is None:
+            matched = match_result_loop(event, self.memory.loops.values(), self.memory.intents)
+            loop_id = matched.loop_id if matched else None
         proposal, model_error = self._model_proposal(event, loop_id=loop_id)
         if model_error:
             return loop_id, None, model_error
@@ -155,22 +168,13 @@ class WorkflowAgent:
                         if proposal is not None
                         else "Wait for the blood culture result before planning the next step."
                     ),
-                    last_planned_at=utcnow(),
+                    last_planned_at=event.source_time,
                 )
                 self.memory.save_loop(loop)
             return loop.loop_id, proposal, None
 
         if event.event_type is EventType.LAB_RESULT_CREATED:
-            loop = next(
-                (
-                    candidate
-                    for candidate in self.memory.loops.values()
-                    if candidate.patient_id == event.patient_id
-                    and EventType.LAB_RESULT_CREATED in candidate.waiting_for
-                ),
-                None,
-            )
-            return loop.loop_id if loop else None, proposal, None
+            return loop_id, proposal, None
 
         if event.event_type is EventType.PROGRESS_NOTE_CREATED:
             intent = next(
@@ -223,7 +227,7 @@ class WorkflowAgent:
                         if proposal is not None
                         else "Wait for the susceptibility panel before any plan change."
                     ),
-                    last_planned_at=utcnow(),
+                    last_planned_at=event.source_time,
                 )
                 self.memory.save_loop(dependency)
             return dependency.loop_id, proposal, None
@@ -270,6 +274,7 @@ class WorkflowAgent:
         loop_id: str | None = None,
         model_proposal: AgentProposal | None = None,
         model_error: str | None = None,
+        tool_registry: Any | None = None,
     ) -> AgentRun:
         run_intent_id = parent.intent_id if parent else None
         if run_intent_id is None and loop_id is not None:
@@ -296,6 +301,63 @@ class WorkflowAgent:
                 trace_metadata=trace_metadata,
             )
         )
+        tool_calls: list[ToolCall] = []
+        tool_records: list[ClinicalEvent] = []
+        tool_error: str | None = None
+        lab_verified = tool_registry is None
+        if tool_registry is not None and model_error is None:
+            selected = list(dict.fromkeys(model_proposal.requested_tools if model_proposal else []))
+            if event.event_type is EventType.LAB_RESULT_CREATED and loop_id:
+                selected = list(dict.fromkeys([*selected, "get_labs", "get_progress_notes"]))
+            for name in selected[: self.policy.max_steps]:
+                started = monotonic()
+                try:
+                    rows = self.policy.call(tool_registry, name, patient_id=event.patient_id)
+                    digest = sha256(
+                        json.dumps(rows, sort_keys=True, default=str).encode("utf-8")
+                    ).hexdigest()[:16]
+                    tool_calls.append(
+                        ToolCall(
+                            tool_name=name,
+                            arguments={"patient_id": event.patient_id},
+                            result_ref=f"sha256:{digest}",
+                            duration_ms=int((monotonic() - started) * 1000),
+                            started_at=utcnow(),
+                        )
+                    )
+                    if name == "get_progress_notes" and isinstance(rows, list):
+                        for item in rows:
+                            try:
+                                tool_records.append(ClinicalEvent.model_validate(item))
+                            except (ValueError, TypeError):
+                                continue
+                    if name == "get_labs" and isinstance(rows, list):
+                        for item in rows:
+                            try:
+                                found = ClinicalEvent.model_validate(item)
+                            except (ValueError, TypeError):
+                                continue
+                            if (
+                                found.event_id == event.event_id
+                                and found.patient_id == event.patient_id
+                                and found.encounter_id == event.encounter_id
+                                and found.payload_ref == event.payload_ref
+                                and found.source_time <= event.source_time
+                            ):
+                                lab_verified = True
+                except (PermissionError, TimeoutError, KeyError, ValueError):
+                    tool_error = "TOOL_QUERY_FAILED"
+                    tool_calls.append(
+                        ToolCall(
+                            tool_name=name,
+                            arguments={"patient_id": event.patient_id},
+                            ok=False,
+                            error_code=tool_error,
+                            duration_ms=int((monotonic() - started) * 1000),
+                            started_at=utcnow(),
+                        )
+                    )
+                    break
         steps = [
             AgentStep(
                 step_id=new_id("STEP"),
@@ -313,13 +375,28 @@ class WorkflowAgent:
             for kind in AgentStepKind
         ]
         stop = StopReason.MODEL_ERROR if model_error else StopReason.WAITING_EXTERNAL_EVENT
+        if tool_error:
+            stop = StopReason.CONFLICTED_EVIDENCE
         if not model_error and len(steps) > self.policy.max_steps:
             stop = StopReason.BUDGET_EXCEEDED
-        updates = {"steps": steps[: self.step_budget], "stop_reason": stop, "finished_at": utcnow()}
-        if event.event_type is EventType.LAB_RESULT_CREATED and stop not in {
-            StopReason.BUDGET_EXCEEDED,
-            StopReason.MODEL_ERROR,
-        }:
+        updates = {
+            "steps": steps[: self.step_budget],
+            "tool_calls": tool_calls,
+            "stop_reason": stop,
+            "finished_at": utcnow(),
+        }
+        if (
+            event.event_type is EventType.LAB_RESULT_CREATED
+            and loop_id
+            and stop
+            not in {
+                StopReason.BUDGET_EXCEEDED,
+                StopReason.MODEL_ERROR,
+                StopReason.CONFLICTED_EVIDENCE,
+            }
+            and lab_verified
+            and not has_explicit_ack(event, [*self.memory.events, *tool_records])
+        ):
             finding = Finding(
                 finding_id=new_id("FND"),
                 patient_id=event.patient_id,

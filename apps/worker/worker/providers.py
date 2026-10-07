@@ -78,6 +78,7 @@ class MockProvider:
                 rationale="The deterministic offline provider recognizes a result follow-up note.",
                 expected_evidence=["blood_culture_result"],
                 waiting_for=[EventType.LAB_RESULT_CREATED],
+                requested_tools=[],
                 priority="HIGH",
                 confidence=0.8,
             )
@@ -88,6 +89,11 @@ class MockProvider:
             rationale="The deterministic offline provider requires workflow verification.",
             priority="NORMAL",
             confidence=0.5,
+            requested_tools=(
+                ["get_labs", "get_progress_notes"]
+                if event.event_type is EventType.LAB_RESULT_CREATED
+                else []
+            ),
         )
 
 
@@ -141,7 +147,15 @@ class DeepSeekProvider:
                         "You are a clinical workflow continuity assistant. "
                         "Return only JSON matching the requested fields. "
                         "Propose workflow candidates; never diagnose, prescribe, "
-                        "or claim that a missing record proves absence."
+                        "or claim that a missing record proves absence. "
+                        "Set requested_tools to only the read-only tool names needed "
+                        "to verify this event: get_patient_snapshot, get_recent_events, "
+                        "get_orders, get_labs, get_consults, get_progress_notes, "
+                        "get_handoff, get_patient_evidence. "
+                        "For a note requesting blood culture result follow-up, "
+                        "use intent_type FOLLOW_RESULT, expected_evidence "
+                        "['blood_culture_result'], and waiting_for "
+                        "['LAB_RESULT_CREATED']. Preserve patient_id exactly."
                     ),
                 },
                 {

@@ -140,7 +140,7 @@ describe('doctor workspace', () => {
   });
   it('shows model provider metadata and safe model errors in the trace', async () => {
     serve((r) =>
-      r.url.pathname.endsWith('/trace')
+      r.url.pathname.endsWith('/runs')
         ? json([
             {
               ...runs[0],
@@ -160,5 +160,86 @@ describe('doctor workspace', () => {
     expect(screen.getByText(/deepseek · deepseek-chat/)).toBeInTheDocument();
     expect(screen.getByText(/错误 MODEL_TIMEOUT/)).toBeInTheDocument();
     expect(screen.getByText('模型调用失败')).toBeInTheDocument();
+  });
+  it('shows a model failure before an Open Loop exists', async () => {
+    serve((request) =>
+      request.url.pathname.endsWith('/loops')
+        ? json([])
+        : request.url.pathname.endsWith('/runs')
+          ? json([
+              {
+                ...runs[0],
+                loop_id: null,
+                run_id: 'RUN-UNBOUND',
+                stop_reason: 'MODEL_ERROR',
+                trace_metadata: {
+                  provider: 'deepseek',
+                  model: 'deepseek-chat',
+                  error_code: 'MODEL_TIMEOUT',
+                },
+              },
+            ])
+          : undefined,
+    );
+    render(<App />);
+    expect(await screen.findByText('RUN-UNBOUND')).toBeInTheDocument();
+    expect(screen.getByText(/错误 MODEL_TIMEOUT/)).toBeInTheDocument();
+  });
+  it('submits a fixed synthetic note to start an Agent run', async () => {
+    const requests = serve((request) =>
+      request.method === 'POST' && request.url.pathname.endsWith('/events')
+        ? json(
+            {
+              event_id: request.body?.event_id,
+              accepted: true,
+              duplicate: false,
+            },
+            202,
+          )
+        : undefined,
+    );
+    render(<App />);
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成查房事件' }),
+    );
+    const sent = requests.find(
+      (request) =>
+        request.method === 'POST' && request.url.pathname.endsWith('/events'),
+    );
+    expect(sent?.body).toMatchObject({
+      patient_id: 'P-1001',
+      encounter_id: 'ENC-2001',
+      event_type: 'NOTE_CREATED',
+    });
+    expect(await screen.findByText(/事件已接收/)).toBeInTheDocument();
+  });
+  it('submits a matching synthetic lab after the note so the evidence check can run', async () => {
+    const requests = serve((request) =>
+      request.method === 'POST' && request.url.pathname.endsWith('/events')
+        ? json(
+            {
+              event_id: request.body?.event_id,
+              accepted: true,
+              duplicate: false,
+            },
+            202,
+          )
+        : undefined,
+    );
+    render(<App />);
+    await userEvent.click(
+      screen.getByRole('button', { name: '发送合成检验结果' }),
+    );
+    const sent = requests.find(
+      (request) =>
+        request.method === 'POST' && request.url.pathname.endsWith('/events'),
+    );
+    expect(sent?.body).toMatchObject({
+      patient_id: 'P-1001',
+      encounter_id: 'ENC-2001',
+      event_type: 'LAB_RESULT_CREATED',
+      payload: { panel: 'blood_culture_result' },
+    });
+    expect(await screen.findByText(/检验事件已接收/)).toBeInTheDocument();
   });
 });

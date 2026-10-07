@@ -124,6 +124,36 @@ svg {
   display: flex;
   min-height: 100vh;
 }
+.synthetic-event-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 20px;
+  margin: 18px 0;
+  padding: 16px 20px;
+  border: 1px solid #b9d9d1;
+  border-left: 4px solid var(--green);
+  border-radius: 10px;
+  background: #edf7f3;
+}
+.synthetic-event-panel > div:first-child {
+  flex: 1 1 320px;
+}
+.synthetic-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.synthetic-event-panel strong {
+  color: var(--green);
+}
+.synthetic-event-panel p {
+  font-size: 12px;
+  color: var(--muted);
+}
+.synthetic-event-status {
+  flex-basis: 100%;
+}
 .sidebar {
   width: 226px;
   min-height: 100vh;

@@ -42,6 +42,7 @@ EXPECTED_TABLES = {
     "patients",
     "encounters",
     "clinical_events",
+    "event_publications",
     "clinical_intents",
     "open_loops",
     "evidence_nodes",

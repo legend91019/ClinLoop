@@ -137,6 +137,65 @@ export class ApiClient {
       signal,
     });
   }
+  listPatientRuns(patient: string, signal?: AbortSignal) {
+    return this.request<AgentRun[]>(
+      `/patients/${encodeURIComponent(patient)}/runs`,
+      { signal },
+    );
+  }
+  submitSyntheticNote() {
+    const now = new Date().toISOString();
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return this.request<{ event_id: string; accepted: boolean }>('/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: `EVT-DEMO-${suffix}`,
+        patient_id: 'P-1001',
+        encounter_id: 'ENC-2001',
+        event_type: 'NOTE_CREATED',
+        event_time: now,
+        source_time: now,
+        payload_ref: `NOTE-DEMO-${suffix}`,
+        actor: {
+          actor_id: 'DR-DEMO',
+          role: 'PHYSICIAN',
+          display_name: 'Synthetic Demo',
+        },
+        payload: {
+          text: '今天复查血培养，结果出来后再决定下一步。',
+          intent_hint: 'FOLLOW_RESULT',
+          expected_evidence: ['blood_culture_result'],
+        },
+      }),
+    });
+  }
+  submitSyntheticLab() {
+    const now = new Date().toISOString();
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return this.request<{ event_id: string; accepted: boolean }>('/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: `EVT-DEMO-LAB-${suffix}`,
+        patient_id: 'P-1001',
+        encounter_id: 'ENC-2001',
+        event_type: 'LAB_RESULT_CREATED',
+        event_time: now,
+        source_time: now,
+        payload_ref: `LAB-DEMO-${suffix}`,
+        actor: {
+          actor_id: 'LAB-DEMO',
+          role: 'SYSTEM',
+          display_name: 'Synthetic Lab',
+        },
+        payload: {
+          panel: 'blood_culture_result',
+          result: 'synthetic_positive',
+        },
+      }),
+    });
+  }
   getHandoff(id: string, signal?: AbortSignal) {
     return this.request<HandoffResponse>(`/handoff/${encodeURIComponent(id)}`, {
       signal,

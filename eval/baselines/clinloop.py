@@ -7,7 +7,7 @@ class ClinLoopAdapter:
     provider_kind = "worker_runtime"
     limitations = [
         "Actual existing WorkflowAgent, in-memory runtime; no replacement detector or gold access.",
-        "Worker currently flags every LAB_RESULT_CREATED even when later acknowledged; findings are retained.",
+        "The conservative Worker requires a matched intent/loop; this context-free adapter has neither and abstains.",
         "Worker emits five step labels but no actual tool calls; trace tool_calls is honestly empty.",
         "Worker does not populate intent/loop/evidence memory or produce handoff content; omission remains measurable.",
         "This runtime has no model provider, durable transport, timer, autonomous resume routing or clinician review in eval.",

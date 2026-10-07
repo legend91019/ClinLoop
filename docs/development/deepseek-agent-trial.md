@@ -24,6 +24,7 @@ DEEPSEEK_MODEL=deepseek-chat
 ```
 
 DeepSeek 失败时，Agent 会停止当前运行并记录安全错误码，不会自动切回规则模式，也不会提交新的 Finding 或状态变化。
+`.env` 保留在本机，不要把 Key 提交到 Git 或发到聊天。更新旧数据库时必须执行本节的 `alembic upgrade head`，以创建事件待发布表。
 
 ## 2. 启动服务
 
@@ -66,31 +67,20 @@ npm --prefix apps/web run dev -- --host 127.0.0.1
 - Swagger：http://127.0.0.1:8000/docs
 - 医生工作台：http://127.0.0.1:5173/?patient=P-1001
 
-## 3. 发送一条事件
+## 3. 在页面体验完整链路
 
-在 Swagger 的 `POST /api/v1/events` 中提交合成事件：
+打开 `http://127.0.0.1:5173/?patient=P-1001`。在 **试用 Agent 事件链** 中：
 
-```json
-{
-  "event_id": "EVT-DEEPSEEK-001",
-  "patient_id": "P-1001",
-  "encounter_id": "ENC-2001",
-  "event_type": "NOTE_CREATED",
-  "event_time": "2026-10-06T10:00:00+08:00",
-  "source_time": "2026-10-06T10:00:00+08:00",
-  "payload_ref": "NOTE-DEEPSEEK-001",
-  "actor": {
-    "actor_id": "DR-TEST",
-    "role": "PHYSICIAN",
-    "display_name": "试用医生"
-  },
-  "payload": {
-    "text": "复查血培养，结果出来后再决定下一步"
-  }
-}
-```
+1. 点 **发送合成查房事件**。API 返回“已接收”后，等 Worker 处理，再刷新页面。**Agent 运行轨迹** 默认显示该患者全部运行；检查最新运行的模型、提案、工具调用和错误码，并在 **未闭环任务** 中确认新增等待检验的 Loop。
+2. 点 **发送合成检验结果**，等 Worker 处理并刷新。新运行应关联刚建的 Loop，出现 `get_labs` 与 `get_progress_notes` 工具记录。若结果匹配、尚无明确医生确认，**流程缺口**会出现待审核的结果响应 Finding。医生可打开证据并接受或驳回。
 
-Worker 完成后，打开工作台的 **Agent 运行轨迹**，应看到 `deepseek · deepseek-chat`、提案引用、模型摘要和运行停止原因。模型只产生候选意图和计划，Guard 与医生审核仍控制高风险工作流变化。
+请先等第一条事件处理完成，再发第二条；连续创建多条相同的查房任务会使检验与任务的关联不唯一，Agent 会保守地停止告警。页面中的“已接收”只表示事件入库，Worker 处理与 DeepSeek 调用是异步的。这个入口只发送固定合成数据，不接受自由输入或真实病历。
+
+也可在 Swagger 的 `POST /api/v1/events` 手动提交相同结构的合成事件。每条事件使用新的 `event_id` 与当前时间；旧时间会按历史事件处理，不一定能关联新任务。Worker 完成后，在运行轨迹中检查 `deepseek · deepseek-chat`、提案引用、模型摘要和停止原因。模型只产生候选意图和计划，Guard 与医生审核仍控制高风险工作流变化。
+
+API 会把事件与待发布记录一起提交。如果 Redis 暂时不可用，Worker 恢复后会补发待发布事件；Redis 已投递而 Worker 中断的 pending 消息也会被重新领取。重复投递按事件 ID 幂等处理。请保持 Worker 运行，以免事件一直停留在待处理状态。
+
+当前在线 Worker 的确定性缺口核对只覆盖**已关联检验结果 → 医生响应**。工具调用能证明检索动作和来源范围，但模型/工具结果仍需医生审核。本流程是工程演示，不是临床效率或安全性验证；其他缺口类别、真实 EHR 接口、多患者队列和线上 DeepSeek 的质量评估仍待完成。
 
 ## 4. 不使用 Docker 的离线模式
 
