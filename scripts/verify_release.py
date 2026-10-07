@@ -44,6 +44,7 @@ def _commands() -> list[tuple[str, list[str]]]:
                 python,
                 "-m",
                 "eval.run_online_eval",
+                "--assert-regression",
                 "--output",
                 "artifacts/eval/online-report.json",
             ],

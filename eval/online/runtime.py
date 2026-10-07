@@ -15,7 +15,15 @@ from apps.worker.worker.providers import ModelProvider, ProviderMetadata
 from apps.worker.worker.service import process_event
 from eval.online.cases import OnlineCase
 from eval.online.scoring import ObservedCase
-from packages.contracts import EventType, FindingType, StopReason, TrustLevel
+from packages.contracts import (
+    ClinicalEvent,
+    EventType,
+    EvidenceNode,
+    Finding,
+    FindingType,
+    StopReason,
+    TrustLevel,
+)
 
 
 class RulesOnlyProvider:
@@ -34,6 +42,36 @@ class RulesOnlyProvider:
             rationale="No model proposal; use existing deterministic intent extraction.",
             confidence=0.0,
         )
+
+
+def evidence_is_source_backed(
+    finding: Finding,
+    evidence: dict[str, EvidenceNode],
+    labs: dict[str, ClinicalEvent],
+    patient_id: str,
+) -> bool:
+    """Require every cited node to match one available source lab and patient."""
+    if finding.patient_id != patient_id or not finding.loop_id or not finding.supporting_evidence:
+        return False
+    for evidence_id in finding.supporting_evidence:
+        node = evidence.get(evidence_id)
+        source_event = labs.get(node.provenance.get("event_id")) if node else None
+        if not (
+            node
+            and source_event
+            and node.patient_id == patient_id
+            and source_event.patient_id == patient_id
+            and node.encounter_id == source_event.encounter_id
+            and node.source_type == "LABS"
+            and source_event.event_type is EventType.LAB_RESULT_CREATED
+            and node.source_id == source_event.payload_ref
+            and node.provenance.get("loop_id") == finding.loop_id
+            and node.trust_level is TrustLevel.SYSTEM_VERIFIED
+            and node.observed_at == source_event.source_time
+            and source_event.source_time <= finding.detected_at
+        ):
+            return False
+    return True
 
 
 def run_case(case: OnlineCase, provider: ModelProvider) -> ObservedCase:
@@ -69,24 +107,10 @@ def run_case(case: OnlineCase, provider: ModelProvider) -> ObservedCase:
             for event in case.events
             if event.event_type is EventType.LAB_RESULT_CREATED
         }
-        valid_count = 0
-        for finding in findings:
-            valid = bool(finding.supporting_evidence)
-            for evidence_id in finding.supporting_evidence:
-                node = evidence.get(evidence_id)
-                source_event = labs.get(node.provenance.get("event_id")) if node else None
-                valid = valid and bool(
-                    node
-                    and source_event
-                    and node.patient_id == case.patient_id
-                    and node.encounter_id == source_event.encounter_id
-                    and node.source_type == "LABS"
-                    and node.source_id == source_event.payload_ref
-                    and node.provenance.get("loop_id") == finding.loop_id
-                    and node.trust_level is TrustLevel.SYSTEM_VERIFIED
-                    and node.observed_at <= finding.detected_at
-                )
-            valid_count += int(valid)
+        valid_count = sum(
+            evidence_is_source_backed(finding, evidence, labs, case.patient_id)
+            for finding in findings
+        )
         return ObservedCase(
             case_id=case.case_id,
             provider_kind=getattr(provider, "evaluation_kind", provider.kind),

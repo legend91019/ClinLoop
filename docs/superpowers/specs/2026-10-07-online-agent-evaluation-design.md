@@ -12,6 +12,8 @@ The first corpus contains direct blood-culture requests, paraphrases, unrelated 
 
 Reports include per-case outcome, TP/FP/FN/TN, precision, recall, evidence validity, provider failures, and provenance. Failed model runs count as misses when an alert is expected; they are never silently excluded. Reports contain no prompts, response bodies, API keys, or raw clinical text. Only synthetic case IDs and short public cohort labels are retained.
 
+The release command checks a fixed-corpus rules regression floor: at least two sourced true alerts, zero false alerts, at most one miss, and no model errors. This catches loss of existing behavior without calling it a clinical safety threshold. Real-model runs default to a local ignored report path.
+
 ## Error handling and limits
 
 Provider exceptions fail with safe error codes, and a failed evaluation does not overwrite the prior report. The benchmark intentionally avoids patient-submitted data and clinical recommendations. The evidence check confirms source and patient linkage, not medical correctness. A contest efficacy claim requires an independently reviewed, broader held-out corpus and clinician time study.

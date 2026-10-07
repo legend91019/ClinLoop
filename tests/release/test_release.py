@@ -16,6 +16,7 @@ def test_release_dry_run_lists_all_required_gates(capsys) -> None:  # type: igno
         "security scan",
     ):
         assert gate in output
+    assert "--assert-regression" in output
 
 
 def test_security_gate_passes() -> None:

@@ -20,6 +20,10 @@ evidence resolves to the expected patient and lab source. A provider error on a
 positive case remains a false negative. The committed offline result is an
 **engineering regression measurement**, not a DeepSeek or clinical efficacy
 result. Six synthetic cases cannot establish generalization or time saved.
+The release script asserts a narrow regression floor on the fixed rules
+cohort: at least two sourced true alerts, no false alerts, at most one miss,
+and no model errors. This prevents an all-miss report from passing the release
+gate. It is not a clinical safety threshold.
 
 To run actual DeepSeek inference, explicitly opt in after setting the key in
 the current process environment (never commit it):
@@ -30,7 +34,8 @@ $env:DEEPSEEK_API_KEY = Read-Host "DeepSeek API Key" -AsSecureString | ConvertFr
 ```
 
 Real mode compares the same `rules` cases with `deepseek`. The output is kept
-local by `.gitignore`. The report stores synthetic case IDs, cohort labels,
+local by `.gitignore`; its default path is
+`artifacts/eval/deepseek-online-local.json`. The report stores synthetic case IDs, cohort labels,
 scores, provider kind, and model ID, but no event text, prompts, raw responses,
 or credential. The model is called on every visible event, so six cases consume
 11 API requests. If the model fails, that case is counted rather than dropped.

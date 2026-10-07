@@ -25,8 +25,22 @@ def main(argv: list[str] | None = None) -> int:
         default="compare",
         help="compare runs rules and deterministic MOCK; DeepSeek requires explicit opt-in",
     )
-    parser.add_argument("--output", type=Path, default=Path("artifacts/eval/online-report.json"))
+    parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--assert-regression",
+        action="store_true",
+        help="fail if the fixed six-case rules baseline loses sourced detections or gains false alerts",
+    )
     options = parser.parse_args(argv)
+    output = options.output or Path(
+        "artifacts/eval/deepseek-online-local.json"
+        if options.provider == "deepseek"
+        else "artifacts/eval/online-report.json"
+    )
+
+    if options.assert_regression and options.provider != "compare":
+        print("--assert-regression requires the default compare mode.", file=sys.stderr)
+        return 2
 
     if options.provider == "deepseek" and not os.environ.get("DEEPSEEK_API_KEY", "").strip():
         print("DEEPSEEK_API_KEY is required for real inference.", file=sys.stderr)
@@ -73,7 +87,20 @@ def main(argv: list[str] | None = None) -> int:
                 "Provider failures remain in the recall denominator.",
             ],
         }
-        _atomic_write(options.output, json.dumps(report, indent=2, sort_keys=True) + "\n", ".json")
+        if options.assert_regression:
+            baseline = methods["rules"]["metrics"]
+            if not (
+                baseline["cases"] == 6
+                and baseline["tp"] >= 2
+                and baseline["fp"] == 0
+                and baseline["fn"] <= 1
+                and baseline["model_errors"] == 0
+            ):
+                print(
+                    "Online rules regression floor failed; prior report preserved.", file=sys.stderr
+                )
+                return 1
+        _atomic_write(output, json.dumps(report, indent=2, sort_keys=True) + "\n", ".json")
     except Exception as exc:
         print(
             f"Online evaluation failed ({type(exc).__name__}); no response body logged.",
