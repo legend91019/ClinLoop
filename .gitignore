@@ -44,6 +44,7 @@ redis-data/
 # --- Artifacts ---
 artifacts/*
 !artifacts/eval/
+artifacts/eval/*
 !artifacts/eval/report.json
 !artifacts/eval/comparison.csv
 !artifacts/eval/online-report.json
