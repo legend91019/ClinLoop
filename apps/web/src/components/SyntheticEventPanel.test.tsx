@@ -17,7 +17,9 @@ describe('synthetic trial status', () => {
       });
     try {
       render(<SyntheticEventPanel patient="P-1001" onRefresh={vi.fn()} />);
-      expect(screen.getByRole('button', { name: '发送合成查房事件' })).toBeEnabled();
+      expect(
+        screen.getByRole('button', { name: '发送合成查房事件' }),
+      ).toBeEnabled();
     } finally {
       write.mockRestore();
     }
