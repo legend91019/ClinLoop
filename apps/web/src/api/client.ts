@@ -166,6 +166,7 @@ export class ApiClient {
           text: '今天复查血培养，结果出来后再决定下一步。',
           intent_hint: 'FOLLOW_RESULT',
           expected_evidence: ['blood_culture_result'],
+          priority: 'HIGH',
         },
       }),
     });
@@ -192,6 +193,61 @@ export class ApiClient {
         payload: {
           panel: 'blood_culture_result',
           result: 'synthetic_positive',
+        },
+      }),
+    });
+  }
+  submitSyntheticProgress(labEventId: string) {
+    if (!labEventId.startsWith('EVT-DEMO-LAB-'))
+      throw new ApiError(0, '请先发送本次合成血培养结果');
+    const now = new Date().toISOString();
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return this.request<{ event_id: string; accepted: boolean }>('/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: `EVT-DEMO-PROGRESS-${suffix}`,
+        patient_id: 'P-1001',
+        encounter_id: 'ENC-2001',
+        event_type: 'PROGRESS_NOTE_CREATED',
+        event_time: now,
+        source_time: now,
+        payload_ref: `NOTE-DEMO-PROGRESS-${suffix}`,
+        actor: {
+          actor_id: 'DR-DEMO',
+          role: 'PHYSICIAN',
+          display_name: 'Synthetic Demo',
+        },
+        payload: {
+          text: '已查看血培养结果，继续等待药敏结果并在结果出来后复核。',
+          acknowledges_event_id: labEventId,
+          creates_dependency: 'susceptibility_result',
+        },
+      }),
+    });
+  }
+  submitSyntheticSusceptibility() {
+    const now = new Date().toISOString();
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return this.request<{ event_id: string; accepted: boolean }>('/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: `EVT-DEMO-SUS-${suffix}`,
+        patient_id: 'P-1001',
+        encounter_id: 'ENC-2001',
+        event_type: 'LAB_RESULT_CREATED',
+        event_time: now,
+        source_time: now,
+        payload_ref: `LAB-DEMO-SUS-${suffix}`,
+        actor: {
+          actor_id: 'LAB-DEMO',
+          role: 'SYSTEM',
+          display_name: 'Synthetic Lab',
+        },
+        payload: {
+          panel: 'susceptibility_result',
+          result: 'synthetic_available',
         },
       }),
     });

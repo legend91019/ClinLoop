@@ -43,6 +43,21 @@ class FailingProvider(ProposalProvider):
         raise ModelProviderError("MODEL_TIMEOUT")
 
 
+class VisibleEventRefProvider(ProposalProvider):
+    def analyze(self, context: AgentContext) -> AgentProposal:
+        proposal = super().analyze(context)
+        if context.event.event_type is EventType.LAB_RESULT_CREATED:
+            return proposal.model_copy(
+                update={"evidence_refs": [event.event_id for event in context.recent_events]}
+            )
+        return proposal
+
+
+class UnseenEventRefProvider(ProposalProvider):
+    def analyze(self, context: AgentContext) -> AgentProposal:
+        return super().analyze(context).model_copy(update={"evidence_refs": ["EVT-NOT-VISIBLE"]})
+
+
 def test_model_proposal_changes_loop_and_is_visible_in_trace() -> None:
     runs = AgentRunRepository()
     agent = WorkflowAgent(runs=runs, provider=ProposalProvider())
@@ -65,3 +80,20 @@ def test_model_error_stops_without_loop_or_finding() -> None:
     assert run.finding_ids == []
     assert agent.memory.loops == {}
     assert run.trace_metadata["error_code"] == "MODEL_TIMEOUT"
+
+
+def test_visible_event_ids_are_accepted_as_model_source_references() -> None:
+    note, lab, *_ = main_case_events()
+    agent = WorkflowAgent(provider=VisibleEventRefProvider())
+    agent.handle_event(note)
+
+    run = agent.handle_event(lab)
+
+    assert run.stop_reason is not StopReason.MODEL_ERROR
+
+
+def test_unseen_event_reference_still_stops_model_proposal() -> None:
+    run = WorkflowAgent(provider=UnseenEventRefProvider()).handle_event(main_case_events()[0])
+
+    assert run.stop_reason is StopReason.MODEL_ERROR
+    assert run.trace_metadata["error_code"] == "MODEL_INVALID_EVIDENCE_REFERENCE"

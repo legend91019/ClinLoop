@@ -6,6 +6,7 @@ from apps.api.app.db import build_engine, create_schema, session_scope
 from apps.api.app.db_models import AuditLogRow, OpenLoopRow
 from apps.api.app.repositories import (
     ClinicalIntentRepository,
+    EvidenceRepository,
     FindingRepository,
     HandoffRepository,
     LoopRepository,
@@ -35,9 +36,14 @@ def test_demo_flow_keeps_gap_open_until_review_then_seals(tmp_path: Path) -> Non
     ]
     assert result["final_action"] == "DRAFT_PENDING_REVIEW"
     assert "LOOP-1002" in result["loop_ids"]
-    assert any("LAB-8821" in item["supporting_evidence"] for item in result["findings"])
-
     with session_scope(engine) as session:
+        linked_sources = {
+            node.source_id
+            for finding in result["findings"]
+            for evidence_id in finding["supporting_evidence"]
+            if (node := EvidenceRepository(session).get(evidence_id)) is not None
+        }
+        assert "LAB-8821" in linked_sources
         loops = LoopRepository(session).list_for_patient("P-1001")
         intents = ClinicalIntentRepository(session).list_for_patient("P-1001")
         assert any(intent.intent_type.value == "FOLLOW_RESULT" for intent in intents)

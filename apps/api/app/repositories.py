@@ -620,6 +620,14 @@ class AgentRunRepository:
         row = self.session.get(AgentRunRow, run_id)
         return self._to_contract(row) if row is not None else None
 
+    def get_latest_for_loop(self, loop_id: str) -> AgentRun | None:
+        row = self.session.scalars(
+            select(AgentRunRow)
+            .where(AgentRunRow.loop_id == loop_id)
+            .order_by(AgentRunRow.started_at.desc(), AgentRunRow.run_id.desc())
+        ).first()
+        return self._to_contract(row) if row is not None else None
+
     def append_trace(
         self,
         run_id: str,

@@ -172,7 +172,10 @@ function Workspace({
         </span>
         <small>每一步，都有据可循</small>
       </div>
-      <SyntheticEventPanel patient={patient} />
+      <SyntheticEventPanel
+        patient={patient}
+        timeline={timeline.data?.entries}
+      />
       <div className="workspace-grid">
         <PatientTimeline
           resource={timeline}

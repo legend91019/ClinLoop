@@ -80,7 +80,23 @@ def test_provider_sends_auth_and_parses_strict_json() -> None:
     assert body["model"] == "deepseek-chat"
     assert body["stream"] is False
     assert "blood_culture_result" in body["messages"][0]["content"]
+    assert all(
+        f'"{field}"' in body["messages"][0]["content"]
+        for field in ("goal", "rationale", "confidence", "requested_tools")
+    )
+    assert body["thinking"] == {"type": "disabled"}
+    assert body["max_tokens"] == 1200
     assert "test-secret-key" not in repr(provider_instance)
+
+
+def test_provider_rejects_truncated_completion_even_if_json_parses() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        payload = response_body(json.dumps(valid_proposal()))
+        payload["choices"][0]["finish_reason"] = "length"
+        return httpx.Response(200, json=payload)
+
+    with pytest.raises(ModelProviderError, match="MODEL_TRUNCATED_RESPONSE"):
+        provider(httpx.MockTransport(handler)).analyze(context())
 
 
 def test_provider_rejects_non_https_public_endpoint() -> None:
@@ -113,6 +129,10 @@ def test_provider_maps_invalid_response_without_remote_text() -> None:
 def test_provider_factory_requires_explicit_deepseek_credentials() -> None:
     with pytest.raises(ValueError, match="DEEPSEEK_API_KEY"):
         build_model_provider(Settings(agent_provider="deepseek", deepseek_api_key=""))
+
+
+def test_current_default_deepseek_model_is_flash() -> None:
+    assert Settings(_env_file=None).deepseek_model == "deepseek-flash"
 
 
 def test_mock_provider_is_selected_without_network_configuration() -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Sequence
 from hashlib import sha256
 from time import monotonic
@@ -15,7 +16,11 @@ from apps.worker.worker.policies import ExecutionPolicy
 from apps.worker.worker.providers import ModelProvider, ModelProviderError, build_model_provider
 from apps.worker.worker.repositories import AgentRunRepository
 from apps.worker.worker.skills.intent import extract_clinical_intent
-from apps.worker.worker.verification import has_explicit_ack, match_result_loop
+from apps.worker.worker.verification import (
+    has_explicit_ack,
+    match_acknowledged_loop,
+    match_result_loop,
+)
 from packages.contracts import (
     AgentRun,
     AgentStep,
@@ -23,12 +28,15 @@ from packages.contracts import (
     ClinicalEvent,
     ClinicalIntent,
     EventType,
+    EvidenceNode,
     Finding,
     FindingType,
+    IntentType,
     LoopState,
     OpenLoop,
     StopReason,
     ToolCall,
+    TrustLevel,
     new_id,
     utcnow,
 )
@@ -99,11 +107,28 @@ class WorkflowAgent:
         if event.event_type is EventType.LAB_RESULT_CREATED and loop_id is None:
             matched = match_result_loop(event, self.memory.loops.values(), self.memory.intents)
             loop_id = matched.loop_id if matched else None
+        if event.event_type is EventType.PROGRESS_NOTE_CREATED and loop_id is None:
+            matched = match_acknowledged_loop(
+                event,
+                self.memory.events,
+                self.memory.loops.values(),
+                self.memory.evidence.values(),
+            )
+            loop_id = matched.loop_id if matched else None
         proposal, model_error = self._model_proposal(event, loop_id=loop_id)
         if model_error:
             return loop_id, None, model_error
 
         if event.event_type is EventType.NOTE_CREATED:
+            model_priority = proposal.priority if proposal is not None else "HIGH"
+            source_priority = str(event.payload.get("priority", "")).upper()
+            priority_order = {"LOW": 0, "NORMAL": 1, "HIGH": 2, "CRITICAL": 3}
+            priority = (
+                source_priority
+                if source_priority in priority_order
+                and priority_order[source_priority] > priority_order[model_priority]
+                else model_priority
+            )
             intent = next(
                 (
                     candidate
@@ -123,7 +148,7 @@ class WorkflowAgent:
                         text=str(event.payload.get("text", proposal.goal)),
                         expected_evidence=proposal.expected_evidence,
                         source_event_id=event.event_id,
-                        requires_clinician_review=proposal.priority in {"HIGH", "CRITICAL"},
+                        requires_clinician_review=priority in {"HIGH", "CRITICAL"},
                     )
                 else:
                     intent = extract_clinical_intent(
@@ -161,7 +186,7 @@ class WorkflowAgent:
                         if proposal is not None and proposal.waiting_for
                         else [EventType.LAB_RESULT_CREATED]
                     ),
-                    priority=proposal.priority if proposal is not None else "HIGH",
+                    priority=priority,
                     confidence=proposal.confidence if proposal is not None else 0.8,
                     last_plan=(
                         proposal.rationale
@@ -177,60 +202,62 @@ class WorkflowAgent:
             return loop_id, proposal, None
 
         if event.event_type is EventType.PROGRESS_NOTE_CREATED:
-            intent = next(
-                (
-                    candidate
-                    for candidate in self.memory.intents.values()
-                    if candidate.patient_id == event.patient_id
-                ),
-                None,
-            )
-            if intent is None:
+            if loop_id is None:
                 return None, proposal, None
+            parent_loop = self.memory.loops[loop_id]
+            dependency_kind = event.payload.get("creates_dependency")
+            if not isinstance(dependency_kind, str) or not re.fullmatch(
+                r"[A-Za-z0-9_]{1,64}", dependency_kind
+            ):
+                return loop_id, proposal, None
             dependency = next(
                 (
                     candidate
                     for candidate in self.memory.loops.values()
                     if candidate.patient_id == event.patient_id
-                    and "susceptibility" in candidate.goal.lower()
+                    and candidate.encounter_id == event.encounter_id
+                    and loop_id in candidate.depends_on
+                    and (
+                        dependency_kind
+                        in self.memory.intents[candidate.intent_id].expected_evidence
+                        or dependency_kind.replace("_", " ") in candidate.goal.lower()
+                    )
                 ),
                 None,
             )
             if dependency is None:
-                parent_loop = next(
-                    candidate
-                    for candidate in self.memory.loops.values()
-                    if candidate.patient_id == event.patient_id
-                    and candidate.intent_id == intent.intent_id
+                dependent_intent = ClinicalIntent(
+                    intent_id=new_id("INT"),
+                    patient_id=event.patient_id,
+                    encounter_id=event.encounter_id,
+                    intent_type=IntentType.FOLLOW_RESULT,
+                    text=str(event.payload.get("text", dependency_kind)),
+                    expected_evidence=[dependency_kind],
+                    source_event_id=event.event_id,
                 )
+                self.memory.save_intent(dependent_intent)
                 dependency = OpenLoop(
                     loop_id=new_id("LOOP"),
                     patient_id=event.patient_id,
                     encounter_id=event.encounter_id,
-                    intent_id=intent.intent_id,
-                    goal=(
-                        proposal.goal
-                        if proposal is not None and proposal.goal
-                        else "Await antimicrobial susceptibility result"
-                    ),
+                    intent_id=dependent_intent.intent_id,
+                    goal=f"Await {dependency_kind.replace('_', ' ')}",
                     state=LoopState.WAITING_EVENT,
-                    waiting_for=(
-                        proposal.waiting_for
-                        if proposal is not None and proposal.waiting_for
-                        else [EventType.LAB_RESULT_CREATED]
-                    ),
-                    depends_on=[parent_loop.loop_id],
-                    priority=proposal.priority if proposal is not None else "HIGH",
-                    confidence=proposal.confidence if proposal is not None else 0.8,
+                    waiting_for=[EventType.LAB_RESULT_CREATED],
+                    depends_on=[loop_id],
+                    priority=parent_loop.priority,
+                    confidence=proposal.confidence
+                    if proposal is not None
+                    else parent_loop.confidence,
                     last_plan=(
                         proposal.rationale
                         if proposal is not None
-                        else "Wait for the susceptibility panel before any plan change."
+                        else f"Wait for the {dependency_kind.replace('_', ' ')} before replanning."
                     ),
                     last_planned_at=event.source_time,
                 )
                 self.memory.save_loop(dependency)
-            return dependency.loop_id, proposal, None
+            return loop_id, proposal, None
 
         return None, proposal, None
 
@@ -261,6 +288,9 @@ class WorkflowAgent:
         if proposal.patient_id != event.patient_id:
             return None, "MODEL_INVALID_PROPOSAL"
         visible_refs = {item.evidence_id for item in context.evidence}
+        visible_refs.update(
+            ref for recent in context.recent_events for ref in (recent.event_id, recent.payload_ref)
+        )
         invalid_refs = set(proposal.evidence_refs) - visible_refs - {event.payload_ref}
         if invalid_refs:
             return None, "MODEL_INVALID_EVIDENCE_REFERENCE"
@@ -385,6 +415,79 @@ class WorkflowAgent:
             "stop_reason": stop,
             "finished_at": utcnow(),
         }
+        result_evidence_id: str | None = None
+        if (
+            event.event_type is EventType.LAB_RESULT_CREATED
+            and loop_id
+            and lab_verified
+            and stop is StopReason.WAITING_EXTERNAL_EVENT
+        ):
+            existing_evidence = next(
+                (
+                    node
+                    for node in self.memory.evidence.values()
+                    if node.patient_id == event.patient_id
+                    and node.encounter_id in {None, event.encounter_id}
+                    and node.source_type == "LABS"
+                    and node.source_id == event.payload_ref
+                    and node.provenance.get("event_id") == event.event_id
+                ),
+                None,
+            )
+            if existing_evidence is None:
+                existing_evidence = EvidenceNode(
+                    evidence_id=new_id("EVD"),
+                    patient_id=event.patient_id,
+                    encounter_id=event.encounter_id,
+                    source_type="LABS",
+                    source_id=event.payload_ref,
+                    observed_at=event.source_time,
+                    claim=f"Lab result recorded for {event.payload.get('panel', 'unspecified panel')}.",
+                    provenance={"event_id": event.event_id, "loop_id": loop_id},
+                    trust_level=TrustLevel.SYSTEM_VERIFIED,
+                    verified_at=event.source_time,
+                )
+                self.memory.append_evidence(existing_evidence, loop_id=loop_id)
+            result_evidence_id = existing_evidence.evidence_id
+        if (
+            event.event_type is EventType.PROGRESS_NOTE_CREATED
+            and loop_id
+            and stop is StopReason.WAITING_EXTERNAL_EVENT
+            and match_acknowledged_loop(
+                event,
+                self.memory.events,
+                self.memory.loops.values(),
+                self.memory.evidence.values(),
+            )
+        ):
+            acknowledgement = next(
+                (
+                    node
+                    for node in self.memory.evidence.values()
+                    if node.provenance.get("event_id") == event.event_id
+                    and node.provenance.get("loop_id") == loop_id
+                    and node.source_type == "PROGRESS_NOTES"
+                ),
+                None,
+            )
+            if acknowledgement is None:
+                acknowledgement = EvidenceNode(
+                    evidence_id=new_id("EVD"),
+                    patient_id=event.patient_id,
+                    encounter_id=event.encounter_id,
+                    source_type="PROGRESS_NOTES",
+                    source_id=event.payload_ref,
+                    observed_at=event.source_time,
+                    claim="Clinician note explicitly acknowledged the linked lab result.",
+                    provenance={
+                        "event_id": event.event_id,
+                        "acknowledges_event_id": event.payload["acknowledges_event_id"],
+                        "loop_id": loop_id,
+                    },
+                    trust_level=TrustLevel.CLINICIAN_CONFIRMED,
+                    verified_at=event.source_time,
+                )
+                self.memory.append_evidence(acknowledgement, loop_id=loop_id)
         if (
             event.event_type is EventType.LAB_RESULT_CREATED
             and loop_id
@@ -395,6 +498,7 @@ class WorkflowAgent:
                 StopReason.CONFLICTED_EVIDENCE,
             }
             and lab_verified
+            and result_evidence_id is not None
             and not has_explicit_ack(event, [*self.memory.events, *tool_records])
         ):
             finding = Finding(
@@ -404,7 +508,7 @@ class WorkflowAgent:
                 intent_id=run.intent_id,
                 finding_type=FindingType.RESULT_WITHOUT_ACKNOWLEDGEMENT,
                 claim="A lab result was found without a recorded acknowledgement in the searched workflow records.",
-                supporting_evidence=[event.payload_ref],
+                supporting_evidence=[result_evidence_id],
                 searched_sources=["LABS", "NOTES", "PROGRESS_NOTES"],
                 source_run_id=run.run_id,
                 confidence=0.8,

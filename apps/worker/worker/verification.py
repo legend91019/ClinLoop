@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from packages.contracts import ClinicalEvent, ClinicalIntent, EventType, LoopState, OpenLoop
+from packages.contracts import (
+    ClinicalEvent,
+    ClinicalIntent,
+    EventType,
+    EvidenceNode,
+    LoopState,
+    OpenLoop,
+)
 
 
 def _tokens(value: str) -> str:
@@ -53,3 +60,46 @@ def has_explicit_ack(event: ClinicalEvent, records: Iterable[ClinicalEvent]) -> 
         ):
             return True
     return False
+
+
+def match_acknowledged_loop(
+    note: ClinicalEvent,
+    events: Iterable[ClinicalEvent],
+    loops: Iterable[OpenLoop],
+    evidence: Iterable[EvidenceNode],
+) -> OpenLoop | None:
+    """Require an explicit clinician-to-result pointer and a backed result loop."""
+    if note.event_type is not EventType.PROGRESS_NOTE_CREATED:
+        return None
+    if note.actor.role not in {"PHYSICIAN", "CLINICIAN"}:
+        return None
+    result_id = note.payload.get("acknowledges_event_id")
+    if not isinstance(result_id, str) or not result_id:
+        return None
+    referenced = [
+        event
+        for event in events
+        if event.event_id == result_id
+        and event.event_type is EventType.LAB_RESULT_CREATED
+        and event.patient_id == note.patient_id
+        and event.encounter_id == note.encounter_id
+        and event.source_time <= note.source_time
+    ]
+    if len(referenced) != 1:
+        return None
+    evidenced_loop_ids = {
+        node.provenance.get("loop_id")
+        for node in evidence
+        if node.patient_id == note.patient_id
+        and node.source_type == "LABS"
+        and node.provenance.get("event_id") == result_id
+    }
+    matched = [
+        loop
+        for loop in loops
+        if loop.loop_id in evidenced_loop_ids
+        and loop.patient_id == note.patient_id
+        and loop.encounter_id == note.encounter_id
+        and loop.state is LoopState.RESULT_AVAILABLE
+    ]
+    return matched[0] if len(matched) == 1 else None

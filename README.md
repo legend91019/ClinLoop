@@ -6,7 +6,7 @@ ClinLoop 持续追踪医生提出的 **Clinical Intent**，在医嘱（Plan）�
 
 > **工程验证，不构成临床有效性证明。** 全部数据为合成或脱敏数据。
 
-**当前可运行范围：** 在线 Worker 可以从查房记录创建候选 Intent/Loop，调用 DeepSeek 选择只读检索工具，并对唯一关联的检验结果核对来源、同次就诊和已有医生确认，再生成待审核的结果响应 Finding。工作台可用两条固定合成事件体验这条链路，步骤见 [DeepSeek Agent 本地试用](docs/development/deepseek-agent-trial.md)。其他缺口类别主要体现在领域契约、演示或离线评测中，尚未完成同等程度的在线 Agent 检测验证。
+**当前可运行范围：** 在线 Worker 可以从查房记录创建候选 Intent/Loop，调用 DeepSeek 选择只读检索工具，核对同次就诊的检验来源，生成待审核 Finding；医生明确确认后会生成后续依赖 Loop，药敏结果可再次唤醒 Agent。交班草稿汇总高优先级未闭环任务与待审查缺口。工作台提供四步固定合成事件；无需 Docker 的真实模型试用见 [DeepSeek Agent 本地试用](docs/development/deepseek-agent-trial.md)。其他缺口类别主要体现在领域契约、演示或离线评测中，尚未完成同等程度的在线 Agent 检测验证。
 
 ## 1. 产品边界
 
@@ -62,7 +62,7 @@ Agent 循环：**OBSERVE → REASON → PLAN → ACT → VERIFY**。
 
 ## 4. 本地启动
 
-前置：Docker、Python 3.12+、Node 22+。
+前置：Python 3.12+、Node 22+。下面是 PostgreSQL / Redis 启动方式；无 Docker 的 SQLite 方式见 [DeepSeek Agent 本地试用](docs/development/deepseek-agent-trial.md)。
 
 ```bash
 # 1. 环境变量
@@ -111,17 +111,17 @@ npm --prefix apps/web run build
 ### 真实 DeepSeek Agent 试用
 
 默认 `AGENT_PROVIDER=mock`，用于无密钥的离线演示。要让 Worker 调用真实
-DeepSeek 模型，请只在本机 `.env` 中设置：
+DeepSeek 模型，可在本机 Worker 进程设置以下环境变量：
 
 ```dotenv
 AGENT_PROVIDER=deepseek
 DEEPSEEK_API_KEY=你的本机密钥
-DEEPSEEK_MODEL=deepseek-chat
-EVENT_BUS=redis
+DEEPSEEK_MODEL=deepseek-flash
+EVENT_BUS=database
 ```
 
 然后按 [DeepSeek Agent 试用指南](docs/development/deepseek-agent-trial.md)
-启动 PostgreSQL、Redis、API、Worker 和前端。模型只提交候选 Intent 与证据引用；
+启动 SQLite、API、Worker 和前端。已有 PostgreSQL / Redis 时也可使用 `EVENT_BUS=redis`。模型只提交候选 Intent 与证据引用；
 Deterministic Guard 仍负责状态合法性和高风险审核。模型调用失败时，本次事件会以
 `MODEL_ERROR` 结束并保留错误码，不会自动写入临床 Finding。
 
