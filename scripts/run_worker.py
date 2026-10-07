@@ -12,7 +12,7 @@ from apps.api.app.settings import get_settings
 from apps.worker.worker.agent import WorkflowAgent
 from apps.worker.worker.bus import RedisStreamEventBus
 from apps.worker.worker.providers import build_model_provider
-from apps.worker.worker.service import process_event
+from apps.worker.worker.service import process_event, publish_pending_events
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -31,7 +31,11 @@ def main(argv: list[str] | None = None) -> int:
     agent = WorkflowAgent(provider=build_model_provider(settings))
     try:
         while True:
-            messages = bus.consume_messages(count=args.count)
+            with session_scope(engine) as session:
+                publish_pending_events(session, bus)
+            messages = bus.recover_pending_messages(count=args.count)
+            if not messages:
+                messages = bus.consume_messages(count=args.count)
             if not messages:
                 if args.once:
                     return 0

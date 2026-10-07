@@ -92,6 +92,7 @@ services:
     image: python:3.12-slim
     container_name: clinloop-agent-worker
     profiles: ["full"]
+    restart: unless-stopped
     working_dir: /app
     command: >
       sh -c "pip install --no-cache-dir -e . &&

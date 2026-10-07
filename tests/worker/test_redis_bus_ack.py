@@ -47,3 +47,23 @@ def test_worker_ack_is_explicit_after_processing() -> None:
     assert redis_client.acks == []
     bus.ack(messages[0])
     assert redis_client.acks == [("clinloop.events:clinloop-workers", b"1-0")]
+
+
+def test_pending_message_can_be_reclaimed_after_worker_restart() -> None:
+    class PendingRedis(FakeRedis):
+        def xautoclaim(self, stream, group, consumer, min_idle_time, start_id, count):
+            assert min_idle_time >= 60_000
+            return (
+                b"0-0",
+                [(b"9-0", {b"event": self.event.model_dump_json()})],
+                [],
+            )
+
+    redis_client = PendingRedis(event())
+    bus = RedisStreamEventBus(redis_client)
+
+    messages = bus.recover_pending_messages(count=1)
+
+    assert len(messages) == 1
+    assert messages[0].event.event_id == "EVT-REDIS-1"
+    assert redis_client.acks == []

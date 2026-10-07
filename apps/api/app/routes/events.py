@@ -13,12 +13,14 @@ port, and returns. It does not run the agent — that is the worker's job
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 
+from apps.api.app.db_models import EventPublicationRow
 from apps.api.app.db_time import as_utc
-from apps.api.app.dependencies import EventPublisherDep, SessionDep
+from apps.api.app.dependencies import EventPublisherDep, NoopEventPublisher, SessionDep
 from apps.api.app.repositories import ClinicalEventRepository
 from packages.contracts import (
     ClinicalEvent,
@@ -31,6 +33,7 @@ from packages.contracts import (
 __all__ = ["router", "MAX_TIMELINE_HOURS"]
 
 router = APIRouter(tags=["events"])
+logger = logging.getLogger(__name__)
 
 #: Upper bound on the timeline look-back window (30 days).
 MAX_TIMELINE_HOURS = 24 * 30
@@ -67,12 +70,22 @@ def ingest_event(
 
     try:
         repo.add(event)
+        session.add(EventPublicationRow(event_id=event.event_id, payload={}))
         session.commit()
     except ValueError as exc:  # duplicate slipped through a race
         session.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
-    publisher.publish(event)
+    if not isinstance(publisher, NoopEventPublisher):
+        try:
+            publisher.publish(event)
+            publication = session.get(EventPublicationRow, event.event_id)
+            publication.published_at = utcnow()
+            publication.attempts += 1
+            session.commit()
+        except Exception:
+            session.rollback()
+            logger.warning("event %s remains queued for publication recovery", event.event_id)
 
     return EventAcceptedResponse(event_id=event.event_id, accepted=True, duplicate=False)
 

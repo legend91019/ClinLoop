@@ -79,6 +79,7 @@ def test_provider_sends_auth_and_parses_strict_json() -> None:
     body = json.loads(seen["request"].content)
     assert body["model"] == "deepseek-chat"
     assert body["stream"] is False
+    assert "blood_culture_result" in body["messages"][0]["content"]
     assert "test-secret-key" not in repr(provider_instance)
 
 

@@ -27,16 +27,24 @@ function Tool({ tool }: { tool: ToolCall }) {
     </div>
   );
 }
-function TraceContent({ loopId }: { loopId: string }) {
+function TraceContent({
+  loopId,
+  patient,
+}: {
+  loopId: string;
+  patient: string;
+}) {
   const resource = useResource(
     useCallback(
       async (signal: AbortSignal) => {
-        const result = await api.getTrace(loopId, signal);
-        if (result.some((run) => run.loop_id !== loopId))
+        const result = loopId
+          ? await api.getTrace(loopId, signal)
+          : await api.listPatientRuns(patient, signal);
+        if (loopId && result.some((run) => run.loop_id !== loopId))
           throw new Error('运行轨迹与所选任务不匹配');
         return result;
       },
-      [loopId],
+      [loopId, patient],
     ),
   );
   return (
@@ -119,27 +127,31 @@ function TraceContent({ loopId }: { loopId: string }) {
   );
 }
 export default function AgentTracePanel({
+  patient,
   loops,
   selected,
   onSelect,
 }: {
+  patient: string;
   loops: Resource<LoopSummary[]>;
   selected: string;
   onSelect: (id: string) => void;
 }) {
-  const valid = loops.data?.some((loop) => loop.loop_id === selected);
+  const valid =
+    !selected || loops.data?.some((loop) => loop.loop_id === selected);
   return (
     <Section
       id="trace"
       title="Agent 运行轨迹"
       english="AGENT TRACE"
       aside={
-        loops.data?.length ? (
+        loops.data ? (
           <select
             aria-label="选择轨迹任务"
             value={selected}
             onChange={(event) => onSelect(event.target.value)}
           >
+            <option value="">该患者全部运行</option>
             {loops.data.map((loop) => (
               <option key={loop.loop_id} value={loop.loop_id}>
                 {loop.loop_id} · {loop.goal}
@@ -152,14 +164,14 @@ export default function AgentTracePanel({
       <p className="panel-note">
         OBSERVE → REASON → PLAN → ACT → VERIFY · 工具参数按需展开
       </p>
-      {loops.loading || loops.error || !loops.data?.length ? (
-        <ResourceState
-          resource={loops}
-          empty="暂无可查看轨迹的任务"
-          isEmpty={!loops.data?.length}
-        />
+      {loops.loading || loops.error ? (
+        <ResourceState resource={loops} empty="暂无任务" isEmpty={false} />
       ) : valid ? (
-        <TraceContent key={selected} loopId={selected} />
+        <TraceContent
+          key={`${patient}:${selected}`}
+          loopId={selected}
+          patient={patient}
+        />
       ) : (
         <p className="resource-state">请选择任务查看轨迹</p>
       )}

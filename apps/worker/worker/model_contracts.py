@@ -41,3 +41,15 @@ class AgentProposal(StrictModel):
     priority: Literal["LOW", "NORMAL", "HIGH", "CRITICAL"] = "NORMAL"
     confidence: float = Field(ge=0.0, le=1.0)
     evidence_refs: list[str] = Field(default_factory=list)
+    requested_tools: list[
+        Literal[
+            "get_patient_snapshot",
+            "get_recent_events",
+            "get_orders",
+            "get_labs",
+            "get_consults",
+            "get_progress_notes",
+            "get_handoff",
+            "get_patient_evidence",
+        ]
+    ] = Field(default_factory=list)

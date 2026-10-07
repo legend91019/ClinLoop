@@ -104,7 +104,7 @@ def test_real_clinloop_replay_records_worker_runs_no_fabricated_tools(api):
     assert first.runs[0].steps
     assert first.tool_calls == []
     assert first.final_states["loops"] == {}
-    assert first.prediction.findings
+    assert first.prediction.findings == []
     assert first.prediction.handoff.item_ids == []
     assert canonicalize(first) == canonicalize(second)
     assert first.runs[0].run_id != second.runs[0].run_id

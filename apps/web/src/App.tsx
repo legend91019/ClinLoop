@@ -25,6 +25,7 @@ import WorkflowGapsPanel from './components/WorkflowGapsPanel';
 import AgentTracePanel from './components/AgentTracePanel';
 import HandoffDraftPanel from './components/HandoffDraftPanel';
 import EvidenceDrawer from './components/EvidenceDrawer';
+import SyntheticEventPanel from './components/SyntheticEventPanel';
 import './workspace.css';
 
 const getPatient = () =>
@@ -57,7 +58,7 @@ function Workspace({
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
   const selected = loops.data?.some((loop) => loop.loop_id === selectedTrace)
     ? selectedTrace
-    : (loops.data?.[0]?.loop_id ?? '');
+    : '';
   const pending = findings.data?.filter(
     (item) => item.requires_review && item.review_status === 'PENDING_REVIEW',
   ).length;
@@ -171,6 +172,7 @@ function Workspace({
         </span>
         <small>每一步，都有据可循</small>
       </div>
+      <SyntheticEventPanel patient={patient} />
       <div className="workspace-grid">
         <PatientTimeline
           resource={timeline}
@@ -185,6 +187,7 @@ function Workspace({
           onReviewed={reviewed}
         />
         <AgentTracePanel
+          patient={patient}
           loops={loops}
           selected={selected}
           onSelect={setSelectedTrace}

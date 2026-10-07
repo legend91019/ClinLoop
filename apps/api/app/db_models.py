@@ -52,6 +52,7 @@ __all__ = [
     "Patient",
     "Encounter",
     "ClinicalEventRow",
+    "EventPublicationRow",
     "ClinicalIntentRow",
     "OpenLoopRow",
     "EvidenceNodeRow",
@@ -141,6 +142,20 @@ class ClinicalEventRow(TimestampMixin, JSONPayloadMixin, Base):
         Index("ix_clinical_events_type", "event_type"),
         Index("ix_clinical_events_encounter", "encounter_id"),
     )
+
+
+class EventPublicationRow(TimestampMixin, JSONPayloadMixin, Base):
+    """Transactional outbox entry for an ingested event."""
+
+    __tablename__ = "event_publications"
+
+    event_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("clinical_events.event_id", ondelete="CASCADE"), primary_key=True
+    )
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    __table_args__ = (Index("ix_event_publications_pending", "published_at"),)
 
 
 class ClinicalIntentRow(TimestampMixin, JSONPayloadMixin, Base):

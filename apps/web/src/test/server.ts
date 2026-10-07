@@ -54,6 +54,7 @@ export function serve(handler?: Handler) {
         return json([loop]);
       if (path.endsWith('/findings')) return json([finding]);
       if (path.endsWith('/trace')) return json(runs);
+      if (path.endsWith('/runs')) return json(runs);
       if (path.endsWith('/source')) return json(source);
       if (path.endsWith('/EVI-1')) return json(evidence);
       if (path.endsWith('/draft')) return json(handoff);

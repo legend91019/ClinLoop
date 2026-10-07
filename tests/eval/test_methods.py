@@ -90,7 +90,8 @@ def test_model_does_not_receive_unobservable_gold_evidence(api):
 def test_cli_accepts_compact_flags_emits_reproducible_secure_report(api, tmp_path):
     assert api, "task11 evaluation API not implemented"
     outputs = [tmp_path / "a.json", tmp_path / "b.json"]
-    for path in outputs:
+    summaries = [tmp_path / "a.csv", tmp_path / "b.csv"]
+    for path, summary in zip(outputs, summaries, strict=True):
         done = subprocess.run(
             [
                 sys.executable,
@@ -100,13 +101,17 @@ def test_cli_accepts_compact_flags_emits_reproducible_secure_report(api, tmp_pat
                 "--seed20260928",
                 "--output",
                 str(path),
+                "--comparison-output",
+                str(summary),
             ],
             capture_output=True,
             text=True,
         )
         assert done.returncode == 0, done.stderr
     assert outputs[0].read_bytes() == outputs[1].read_bytes()
+    assert summaries[0].read_bytes() == summaries[1].read_bytes()
     report = json.loads(outputs[0].read_text(encoding="utf-8"))
+    assert "ClinLoop,worker_runtime,0.0,0.0" in summaries[0].read_text(encoding="utf-8")
     assert report["case_count"] == 100
     assert report["synthetic_only"] is True
     assert report["seed"] == 20260928
