@@ -28,20 +28,46 @@ export async function waitForAgentRun(
   options: {
     attempts?: number;
     intervalMs?: number;
+    timeoutMs?: number;
     signal?: AbortSignal;
   } = {},
 ): Promise<AgentRun | null> {
-  const { attempts = 60, intervalMs = 750 } = options;
-  const signal = options.signal ?? new AbortController().signal;
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (signal.aborted) throw abortError();
-    const runs = await loadRuns(signal);
-    if (signal.aborted) throw abortError();
-    const matched = runs.find(
-      (run) => run.trigger_event_id === eventId && run.stop_reason,
-    );
-    if (matched) return matched;
-    if (attempt + 1 < attempts) await pause(intervalMs, signal);
+  const { attempts = 60, intervalMs = 750, timeoutMs = 45_000 } = options;
+  if (options.signal?.aborted) throw abortError();
+  const controller = new AbortController();
+  let timeoutHandle: number | undefined;
+  let cancel: (() => void) | undefined;
+  const deadline = new Promise<null>((resolve) => {
+    timeoutHandle = window.setTimeout(() => {
+      resolve(null);
+      controller.abort();
+    }, timeoutMs);
+  });
+  const externalAbort = new Promise<never>((_, reject) => {
+    cancel = () => {
+      reject(abortError());
+      controller.abort();
+    };
+    options.signal?.addEventListener('abort', cancel, { once: true });
+  });
+  async function poll(): Promise<AgentRun | null> {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      if (controller.signal.aborted) throw abortError();
+      const runs = await loadRuns(controller.signal);
+      if (controller.signal.aborted) throw abortError();
+      const matched = runs.find(
+        (run) => run.trigger_event_id === eventId && run.stop_reason,
+      );
+      if (matched) return matched;
+      if (attempt + 1 < attempts) await pause(intervalMs, controller.signal);
+    }
+    return null;
   }
-  return null;
+  try {
+    return await Promise.race([poll(), deadline, externalAbort]);
+  } finally {
+    window.clearTimeout(timeoutHandle);
+    if (cancel) options.signal?.removeEventListener('abort', cancel);
+    controller.abort();
+  }
 }

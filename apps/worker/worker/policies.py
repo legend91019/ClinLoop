@@ -31,6 +31,8 @@ class ExecutionPolicy:
         """Call one explicitly allowlisted tool and enforce its time budget."""
         if name not in self.allowed_tools:
             raise PermissionError(f"tool {name!r} is not allowlisted")
+        if self.timeout_seconds == 0:
+            raise ToolTimeoutError(f"tool {name!r} exceeded execution timeout")
         started = monotonic()
         result = registry.call(name, **arguments)
         if monotonic() - started > self.timeout_seconds:

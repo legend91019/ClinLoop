@@ -176,7 +176,6 @@ function Workspace({
       <SyntheticEventPanel
         key={patient}
         patient={patient}
-        timeline={timeline.data?.entries}
         onRefresh={() => {
           timeline.retry();
           loops.retry();

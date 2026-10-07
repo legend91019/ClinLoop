@@ -18,12 +18,20 @@ def test_unregistered_tool_is_rejected_before_call() -> None:
 
 def test_tool_timeout_is_explicit_and_does_not_claim_missing_data() -> None:
     registry = ToolRegistry()
-    registry.register("slow", lambda **_: "done")
+    called = False
+
+    def slow(**_: object) -> str:
+        nonlocal called
+        called = True
+        return "done"
+
+    registry.register("slow", slow)
     policy = ExecutionPolicy(allowed_tools=frozenset({"slow"}), timeout_seconds=0.0)
 
     with pytest.raises(ToolTimeoutError) as exc_info:
         policy.call(registry, "slow")
     assert exc_info.value.error_code == "TOOL_TIMEOUT"
+    assert called is False
 
 
 def test_sensitive_values_are_redacted_recursively() -> None:
