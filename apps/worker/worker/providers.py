@@ -300,6 +300,7 @@ class AgentArtsProvider:
     def analyze(self, context: AgentContext) -> AgentProposal:
         started = time.monotonic()
         try:
+            context_json = context.model_dump_json()
             with httpx.Client(
                 timeout=self._timeout,
                 transport=self._transport,
@@ -311,7 +312,8 @@ class AgentArtsProvider:
                     json={
                         "inputs": {
                             "schema_version": "1.0",
-                            "context_json": context.model_dump_json(),
+                            "context_json": context_json,
+                            "query": context_json,
                             "request_id": context.event.event_id,
                             "patient_id": context.event.patient_id,
                             "trigger_event_id": context.event.event_id,
