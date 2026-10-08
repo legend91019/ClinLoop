@@ -31,6 +31,7 @@
 - [x] Published-runtime adapter, strict proposal validation, authenticated read-only evidence tools, and fixed 50-case engineering corpus implemented locally.
 - [x] Rule baseline measured: TP 19 / FN 6 / FP 0 / TN 25, 76% recall on 50 synthetic cases.
 - [x] AgentArts workflow and SOP knowledge base created in the contest account; one synthetic case debugged through knowledge retrieval, proposal and evidence review.
+- [x] Multi-agent controller draft created with the result-follow-up child workflow; routing and collaboration remain unverified.
 - [ ] Submitted version deployed as runtime with MaaS authentication; platform API trace/screenshots captured.
 - [ ] Real AgentArts 50-case report meets preregistered recall, precision, false-alert, evidence, and error gates.
 - [ ] Timed participant study records paired task durations and error rates; only then claim work-time savings.
