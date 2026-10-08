@@ -29,6 +29,8 @@ For the fixed 50-case contest engineering set, run `python -m eval.run_online_ev
 
 After publishing a workflow in AgentArts, set `AGENTARTS_ENDPOINT`, `AGENTARTS_RUNTIME_NAME`, and `AGENTARTS_API_KEY` in the Worker environment, then run `python -m eval.run_online_eval --provider agentarts --corpus contest-v1 --assert-contest-target --output artifacts/eval/agentarts-online-local.json`. The exit code is nonzero below the preregistered 95% recall, 90% precision, 10% negative false-alert rate, 100% evidence-validity, zero model-error gates. The failed report is retained for analysis. This reports engineering performance only; a separate timed human study is needed for efficiency claims.
 
+For actual volunteer timing data, fill the private CSV described in the [study protocol](../docs/agentarts/evaluation-protocol.md), then run `python -m eval.run_human_study --input <private.csv> --output artifacts/eval/human-study-local.json`. The analyzer validates complete pairs and timestamp consistency and emits aggregate timing and error rates; it never creates observations.
+
 To run actual DeepSeek inference, explicitly opt in after setting the key in
 the current process environment (never commit it):
 

@@ -20,6 +20,8 @@
 
 原始计时记录模板见 [human-study-template.csv](human-study-template.csv)。`participant_id` 应使用匿名代号，`mode` 取 `manual` 或 `clinloop`，每名参与者的两种模式任务应采用不同但配平的合成病例。完成后另存原始记录及分析脚本，保留失败和超时样本。
 
+填好真实观察数据后执行：`python -m eval.run_human_study --input <私有原始CSV路径> --output artifacts/eval/human-study-local.json`。分析器要求同一参与者与 `task_id` 有完整的两种模式配对，核对时间戳与耗时，输出配对中位节省秒数、相对节省比例、识别正确率、证据核对正确率和错误接受率；报告只含汇总与输入 SHA-256，不含参与者代号或备注。原始 CSV 与报告默认不纳入 Git。
+
 ## 尚未取得的证据
 
 当前未有参赛账号的已发布 AgentArts 运行时、在线评测输出、云端调用详情截图和真实参与者计时，因此不能宣称达到 95% 召回或已减少医疗机构工作量。完成后将本文件中的这一节替换为带运行时间、版本和报告路径的结果。
