@@ -169,6 +169,8 @@ python -m eval.run_online_eval --output artifacts/eval/online-report.json
 
 另有固定的 50 例 `contest-v1` 合成集。规则基线目前为 TP 19、FN 6、FP 0、TN 25，召回率 76%。真实 AgentArts 的预设门槛、运行命令及人工节时实验见 [评测协议](docs/agentarts/evaluation-protocol.md)；尚未取得真实平台成绩。
 
+2026-10-08 使用 AgentArts 免费试运行额度核验了冻结集各一例阳性和阴性输入，见 [平台试运行观测](docs/agentarts/free-trial-evidence-2026-10-08.md)。这两例只测候选意图，不能代替 50 例在线 Worker 验收。
+
 ## 8. Git / PR 规则
 
 - `main` 是唯一集成分支，**禁止直接 push**。
