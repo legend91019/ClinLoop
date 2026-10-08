@@ -6,6 +6,7 @@ import json
 import math
 import re
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Literal, Protocol
 from urllib.parse import urlsplit
@@ -17,6 +18,7 @@ from apps.worker.worker.model_contracts import AgentContext, AgentProposal
 from packages.contracts import EventType, IntentType
 
 __all__ = [
+    "AgentArtsProvider",
     "DeepSeekProvider",
     "ModelProvider",
     "ModelProviderError",
@@ -247,6 +249,143 @@ class DeepSeekProvider:
         )
 
 
+class AgentArtsProvider:
+    """Call a published AgentArts workflow; output is still subject to ClinLoop Guard."""
+
+    kind: Literal["real"] = "real"
+
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        runtime_name: str,
+        api_key: str,
+        timeout: float = 30.0,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
+        parsed = urlsplit(endpoint)
+        local_http = parsed.scheme == "http" and parsed.hostname in {
+            "localhost",
+            "127.0.0.1",
+            "::1",
+        }
+        if (
+            not parsed.hostname
+            or parsed.query
+            or parsed.fragment
+            or not (parsed.scheme == "https" or local_http)
+        ):
+            raise ValueError("AGENTARTS_ENDPOINT must use HTTPS (or loopback HTTP)")
+        if not re.fullmatch(r"agent-arts-[A-Za-z0-9_-]{1,53}", runtime_name):
+            raise ValueError("AGENTARTS_RUNTIME_NAME must name a published runtime")
+        if not api_key.strip() or any(char in api_key for char in "\r\n"):
+            raise ValueError("AGENTARTS_API_KEY must be nonempty")
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, (int, float))
+            or not math.isfinite(timeout)
+            or timeout <= 0
+        ):
+            raise ValueError("AgentArts timeout must be positive")
+        self.name = runtime_name
+        self._endpoint = endpoint.rstrip("/")
+        self._api_key = api_key
+        self._timeout = timeout
+        self._transport = transport
+        self.metadata = ProviderMetadata(provider="agentarts", model=runtime_name)
+
+    def __repr__(self) -> str:
+        return f"AgentArtsProvider(runtime_name={self.name!r})"
+
+    def analyze(self, context: AgentContext) -> AgentProposal:
+        started = time.monotonic()
+        try:
+            with httpx.Client(
+                timeout=self._timeout,
+                transport=self._transport,
+                follow_redirects=False,
+                trust_env=False,
+            ) as client:
+                response = client.post(
+                    f"{self._endpoint}/runtimes/{self.name}/invocations",
+                    json={
+                        "inputs": {
+                            "schema_version": "1.0",
+                            "context_json": context.model_dump_json(),
+                            "request_id": context.event.event_id,
+                            "patient_id": context.event.patient_id,
+                            "trigger_event_id": context.event.event_id,
+                        }
+                    },
+                    headers={
+                        "Authorization": f"Bearer {self._api_key}",
+                        "x-hw-agentarts-session-id": uuid.uuid4().hex,
+                        "X-Request-Id": uuid.uuid4().hex,
+                        "X-Invoke-Mode": "published",
+                    },
+                )
+            latency = int((time.monotonic() - started) * 1000)
+            if not 200 <= response.status_code < 300:
+                self._set_metadata(latency, error_code="MODEL_HTTP_ERROR")
+                raise ModelProviderError("MODEL_HTTP_ERROR")
+            if len(response.content) > 2_000_000:
+                self._set_metadata(latency, error_code="MODEL_RESPONSE_TOO_LARGE")
+                raise ModelProviderError("MODEL_RESPONSE_TOO_LARGE")
+            if "text/event-stream" in response.headers.get("content-type", ""):
+                messages = [
+                    json.loads(line[5:].strip())
+                    for line in response.text.splitlines()
+                    if line.startswith("data:") and line[5:].strip() not in {"", "[DONE]"}
+                ]
+                result = next(
+                    message
+                    for message in reversed(messages)
+                    if message.get("data", {}).get("node_id") == "node_end"
+                    or message.get("data", {}).get("node_type") == "End"
+                )
+            else:
+                result = response.json()
+            output = result["data"]["text"]
+            if isinstance(output, dict):
+                output = output.get("proposal_json", output)
+            if not isinstance(output, str):
+                raise ValueError("AgentArts end node must return proposal JSON text")
+            envelope = json.loads(output)
+            if isinstance(envelope, dict) and "proposal_json" in envelope:
+                envelope = envelope["proposal_json"]
+                if isinstance(envelope, str):
+                    envelope = json.loads(envelope)
+            proposal = AgentProposal.model_validate_json(json.dumps(envelope), strict=True)
+            self._set_metadata(latency, proposal_ref=proposal.patient_id)
+            return proposal
+        except ModelProviderError:
+            raise
+        except httpx.TimeoutException:
+            self._set_metadata(0, error_code="MODEL_TIMEOUT")
+            raise ModelProviderError("MODEL_TIMEOUT") from None
+        except httpx.HTTPError:
+            self._set_metadata(0, error_code="MODEL_TRANSPORT_ERROR")
+            raise ModelProviderError("MODEL_TRANSPORT_ERROR") from None
+        except (ValueError, TypeError, KeyError, IndexError, StopIteration):
+            self._set_metadata(0, error_code="MODEL_INVALID_RESPONSE")
+            raise ModelProviderError("MODEL_INVALID_RESPONSE") from None
+
+    def _set_metadata(
+        self,
+        latency_ms: int,
+        *,
+        proposal_ref: str | None = None,
+        error_code: str | None = None,
+    ) -> None:
+        self.metadata = ProviderMetadata(
+            provider="agentarts",
+            model=self.name,
+            latency_ms=latency_ms,
+            proposal_ref=proposal_ref,
+            error_code=error_code,
+        )
+
+
 def build_model_provider(settings: Settings) -> ModelProvider:
     provider = settings.agent_provider.strip().lower()
     if provider == "mock":
@@ -260,4 +399,11 @@ def build_model_provider(settings: Settings) -> ModelProvider:
             api_key=settings.deepseek_api_key,
             timeout=settings.agent_timeout_seconds,
         )
-    raise ValueError("AGENT_PROVIDER must be mock or deepseek")
+    if provider == "agentarts":
+        return AgentArtsProvider(
+            endpoint=settings.agentarts_endpoint,
+            runtime_name=settings.agentarts_runtime_name,
+            api_key=settings.agentarts_api_key,
+            timeout=settings.agent_timeout_seconds,
+        )
+    raise ValueError("AGENT_PROVIDER must be mock, deepseek or agentarts")

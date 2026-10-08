@@ -48,6 +48,7 @@ artifacts/eval/*
 !artifacts/eval/report.json
 !artifacts/eval/comparison.csv
 !artifacts/eval/online-report.json
+!artifacts/eval/contest-rules-report.json
 dist/
 
 # --- Editors / OS ---

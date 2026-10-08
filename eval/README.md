@@ -25,6 +25,10 @@ cohort: at least two sourced true alerts, no false alerts, at most one miss,
 and no model errors. This prevents an all-miss report from passing the release
 gate. It is not a clinical safety threshold.
 
+For the fixed 50-case contest engineering set, run `python -m eval.run_online_eval --provider rules --corpus contest-v1 --output artifacts/eval/contest-rules-local.json`. It has 25 positives and 25 negatives. The current rule baseline is TP 19 / FN 6 / FP 0 / TN 25, or 76% recall and 100% precision on this synthetic set. A deterministic MOCK gives 25/25 recall but 12/25 negative false alerts. Neither result is a live AgentArts measurement. See the [AgentArts evaluation protocol](../docs/agentarts/evaluation-protocol.md) for the frozen cohort and limitations.
+
+After publishing a workflow in AgentArts, set `AGENTARTS_ENDPOINT`, `AGENTARTS_RUNTIME_NAME`, and `AGENTARTS_API_KEY` in the Worker environment, then run `python -m eval.run_online_eval --provider agentarts --corpus contest-v1 --assert-contest-target --output artifacts/eval/agentarts-online-local.json`. The exit code is nonzero below the preregistered 95% recall, 90% precision, 10% negative false-alert rate, 100% evidence-validity, zero model-error gates. The failed report is retained for analysis. This reports engineering performance only; a separate timed human study is needed for efficiency claims.
+
 To run actual DeepSeek inference, explicitly opt in after setting the key in
 the current process environment (never commit it):
 

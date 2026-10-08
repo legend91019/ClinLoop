@@ -51,3 +51,33 @@ def test_scoring_keeps_model_failure_in_denominator() -> None:
     assert report["fn"] == 1
     assert report["model_errors"] == 1
     assert report["recall"] == 0.0
+
+
+def test_scoring_reports_runtime_latency_and_false_alert_rate() -> None:
+    positive = score_case(
+        expected_alert=True,
+        observed=ObservedCase("CASE-001", "real", 1, 1, 0, 2, 1200),
+    )
+    negative = score_case(
+        expected_alert=False,
+        observed=ObservedCase("CASE-002", "real", 1, 1, 0, 2, 800),
+    )
+
+    report = summarize([positive, negative])
+
+    assert report["false_alert_rate"] == 1.0
+    assert report["latency_ms_total"] == 2000
+    assert report["latency_ms_mean"] == 1000.0
+
+
+def test_invalid_positive_evidence_does_not_inflate_negative_false_alert_rate() -> None:
+    invalid_positive = score_case(
+        expected_alert=True,
+        observed=ObservedCase("CASE-001", "real", 1, 0, 0, 0),
+    )
+    normal = score_case(
+        expected_alert=False,
+        observed=ObservedCase("CASE-002", "real", 0, 0, 0, 0),
+    )
+    assert summarize([invalid_positive, normal])["false_alert_rate"] == 0.0
+    assert summarize([invalid_positive, normal])["evidence_validity_rate"] == 0.0

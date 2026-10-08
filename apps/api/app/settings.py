@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-flash"
+    agentarts_endpoint: str = ""
+    agentarts_runtime_name: str = ""
+    agentarts_api_key: str = ""
+    agentarts_tool_key: str = ""
 
     # --- api ---
     app_name: str = "ClinLoop API"

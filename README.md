@@ -125,6 +125,10 @@ EVENT_BUS=database
 Deterministic Guard 仍负责状态合法性和高风险审核。模型调用失败时，本次事件会以
 `MODEL_ERROR` 结束并保留错误码，不会自动写入临床 Finding。
 
+### 华为云 AgentArts 参赛集成
+
+`AGENT_PROVIDER=agentarts` 可调用已发布的 AgentArts 工作流；平台负责知识检索与候选提案编排，ClinLoop 负责证据校验、持久化、审计和医生审核。环境变量、画布节点、只读 HTTP 工具和发布步骤见 [AgentArts 部署手册](docs/agentarts/workflow-runbook.md)。该模式须有实际发布的运行时和密钥；仅设置环境变量或在本地调用 DeepSeek 不构成 AgentArts 参赛部署。
+
 ## 6. Demo
 
 主 Demo 病例 `P-1001`（`CASE-BLOOD-CULTURE`）：
@@ -162,6 +166,8 @@ python -m eval.run_online_eval --output artifacts/eval/online-report.json
 ```
 
 它对六个合成随访病例比较现有规则提取器与确定性 MOCK，核查持久化 Finding 的检验来源。需要真实 DeepSeek 时按[评测说明](eval/README.md#database-backed-online-evaluation)显式启用。六例结果只作为工程回归证据，尚不能证明 Agent 的临床效果或节省工作时间。
+
+另有固定的 50 例 `contest-v1` 合成集。规则基线目前为 TP 19、FN 6、FP 0、TN 25，召回率 76%。真实 AgentArts 的预设门槛、运行命令及人工节时实验见 [评测协议](docs/agentarts/evaluation-protocol.md)；尚未取得真实平台成绩。
 
 ## 8. Git / PR 规则
 

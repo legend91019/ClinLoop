@@ -118,6 +118,7 @@ def run_case(case: OnlineCase, provider: ModelProvider) -> ObservedCase:
             valid_evidence_count=valid_count,
             model_errors=sum(run.stop_reason is StopReason.MODEL_ERROR for run in runs),
             tool_calls=sum(len(run.tool_calls) for run in runs),
+            latency_ms=sum(int(run.trace_metadata.get("latency_ms", 0)) for run in runs),
         )
     finally:
         engine.dispose()

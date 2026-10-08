@@ -1,4 +1,4 @@
-from eval.online.cases import online_cases
+from eval.online.cases import contest_cases, online_cases
 
 
 def test_online_cases_keep_labels_outside_visible_events() -> None:
@@ -24,3 +24,15 @@ def test_online_cases_are_deterministic() -> None:
     second = online_cases()
 
     assert first == second
+
+
+def test_contest_corpus_is_frozen_balanced_and_label_blind() -> None:
+    cases = contest_cases()
+
+    assert len(cases) == 50
+    assert sum(case.expected_alert for case in cases) == 25
+    assert len({case.case_id for case in cases}) == 50
+    assert cases == contest_cases()
+    for case in cases:
+        assert all("expected_alert" not in event.payload for event in case.events)
+        assert all("cohort" not in event.payload for event in case.events)
