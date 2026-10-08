@@ -48,6 +48,7 @@ def test_published_runtime_request_and_strict_proposal() -> None:
     assert body["inputs"]["patient_id"] == "P-1001"
     assert body["inputs"]["trigger_event_id"] == "EVT-PROVIDER-1"
     assert json.loads(body["inputs"]["context_json"])["event"]["patient_id"] == "P-1001"
+    assert body["inputs"]["query"] == body["inputs"]["context_json"]
     assert "test-key" not in repr(selected)
     assert selected.metadata.provider == "agentarts"
 
