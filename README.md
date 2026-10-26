@@ -135,6 +135,10 @@ uv run python -m eval.run_online_eval --provider rules --corpus contest-v1 --out
 
 正式提交前仍需完成：发布运行时并接入本地 Worker；验证平台只读工具调用及多智能体路由；在固定集上跑完整 50 例；开展真实参与者节时实验；提供在线 Demo 与演示材料。当前账号在 2026-10-08 显示评测实验免费次数 `0/0`，正式部署的模型调用存在按量计费风险；本阶段仅使用免费试运行额度，没有启动可能收费的评测任务或部署。
 
+## 队友接手
+
+从 GitHub `main` 获取代码后，先读[队友接手指南](docs/handoff/teammate-handoff.md)，下载[合成数据包](docs/handoff/clinloop-synthetic-data-v1.zip)并按[数据包说明](docs/handoff/data-package.md)核对输入、答案和报告。压缩包只含合成病例与已提交的工程测评结果；当前没有 AgentArts 完整 50 例在线成绩或真实参与者节时数据。数据包可用 `uv run python scripts/build_teammate_pack.py` 从仓库重新生成。
+
 ## 安全边界与开发约定
 
 - **只使用合成数据**；不要上传真实患者记录、密钥、`.env`、数据库文件或卷。
