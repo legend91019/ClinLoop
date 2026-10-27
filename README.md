@@ -81,6 +81,16 @@ npm --prefix apps/web run dev -- --host 127.0.0.1
 
 ## 系统结构
 
+### 患者病历与随访工作台
+
+本次患者工作台、实时转录、DeepSeek 临床文书撰写、医生签署、首次查房提醒和任务闭环的变更摘要及队友验收步骤，见[患者 Agent 接手说明](docs/development/patient-agent-handoff.md)。
+
+新增患者目录、六位可重复导入的模拟患者、入院病历/查房/病程文书草稿和手动跟进任务。可按患者保存并提交记录，关联任务，填写处理结果，并将高优先级未完成任务带入交班。
+
+患者 Agent 已接入提交记录：Worker 读取当前就诊记录、提出带原文的候选任务；医生确认后建立等待或人工跟进任务。当前患者的模拟检验结果可唤醒原有证据校验链；医生确认查看后闭环，并可继续建立药敏依赖。页面展示分析、任务、证据和工具轨迹。默认 mock 为明确标记的确定性演示，非真实模型效果。
+
+使用同一数据库运行 `python -m scripts.init_patient_workspace` 后重启服务，打开 `/?patient=P-2001`。先填写医生身份，再选择患者开始录入。操作步骤、迁移与接口见[患者工作台说明](docs/development/patient-workspace.md)。
+
 ```mermaid
 flowchart LR
     Web[React 医生工作台] <--> API[FastAPI 业务 API]
