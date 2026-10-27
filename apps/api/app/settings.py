@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # --- agent (consumed by the worker in task 5+) ---
     openai_api_key: str = ""
     agent_provider: str = "mock"
+    note_draft_provider: str = "deepseek"
     agent_step_budget: int = 8
     agent_timeout_seconds: int = 30
     deepseek_api_key: str = ""

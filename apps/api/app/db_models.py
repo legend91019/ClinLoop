@@ -52,6 +52,7 @@ __all__ = [
     "Patient",
     "Encounter",
     "ClinicalEventRow",
+    "ClinicalDocumentRow",
     "EventPublicationRow",
     "ClinicalIntentRow",
     "OpenLoopRow",
@@ -119,6 +120,30 @@ class Encounter(TimestampMixin, JSONPayloadMixin, Base):
     patient: Mapped[Patient] = relationship(back_populates="encounters")
 
     __table_args__ = (Index("ix_encounters_patient", "patient_id"),)
+
+
+class ClinicalDocumentRow(TimestampMixin, JSONPayloadMixin, Base):
+    """Editable drafts become immutable when submitted to the event stream."""
+
+    __tablename__ = "clinical_documents"
+
+    document_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    patient_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("patients.patient_id"), nullable=False
+    )
+    encounter_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("encounters.encounter_id"), nullable=False
+    )
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="DRAFT")
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    author_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    __table_args__ = (Index("ix_documents_patient_encounter", "patient_id", "encounter_id"),)
 
 
 class ClinicalEventRow(TimestampMixin, JSONPayloadMixin, Base):

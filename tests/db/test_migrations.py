@@ -25,6 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 #: Tables the initial revision must create, in dependency order.
 EXPECTED_TABLES = {
+    "clinical_documents",
     "patients",
     "encounters",
     "clinical_events",

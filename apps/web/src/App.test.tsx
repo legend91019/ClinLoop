@@ -2,8 +2,42 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
+import type { PatientPage } from './navigation';
 import { json, serve } from './test/server';
 import { finding, runs, timeline } from './test/fixtures';
+
+function renderPage(page: PatientPage = 'timeline') {
+  const url = new URL(window.location.href);
+  url.searchParams.set('view', page);
+  window.history.replaceState(null, '', url);
+  return render(<App />);
+}
+async function navigate(name: string) {
+  if (name === '患者列表' || name === '患者概览') {
+    await userEvent.click(
+      within(screen.getByRole('navigation', { name: '工作台导航' })).getByRole(
+        'link',
+        { name },
+      ),
+    );
+    return;
+  }
+  const back = screen.queryByRole('button', { name: '返回患者概览' });
+  if (back) await userEvent.click(back);
+  else if (
+    new URL(window.location.href).searchParams.get('view') !== 'overview'
+  ) {
+    await userEvent.click(
+      within(screen.getByRole('navigation', { name: '工作台导航' })).getByRole(
+        'link',
+        { name: '患者概览' },
+      ),
+    );
+  }
+  await userEvent.click(
+    screen.getByRole('button', { name: new RegExp('^' + name) }),
+  );
+}
 
 describe('doctor workspace', () => {
   it('allows a 720-hour demo window and forwards it to the timeline endpoint', async () => {
@@ -13,7 +47,7 @@ describe('doctor workspace', () => {
         ? json({ ...timeline, entries: [], count: 0 })
         : undefined,
     );
-    render(<App />);
+    renderPage('timeline');
     await screen.findByText('此时间范围内暂无事件');
     await userEvent.selectOptions(screen.getByLabelText('时间范围'), '720');
     expect(await screen.findByText('检验系统')).toBeInTheDocument();
@@ -25,22 +59,30 @@ describe('doctor workspace', () => {
       ),
     ).toBe(true);
   });
-  it('renders all five views, synthetic disclaimer and default patient data', async () => {
+  it('opens each patient section as a separate navigable page', async () => {
     serve();
-    render(<App />);
+    renderPage('timeline');
     for (const name of [
       '患者时间线',
       '未闭环任务',
       '流程缺口',
       'Agent 运行轨迹',
       '交接草稿',
-    ])
-      expect(screen.getByRole('heading', { name })).toBeInTheDocument();
+    ]) {
+      await navigate(name);
+      expect(screen.getByRole('heading', { name, level: 2 })).toBeVisible();
+    }
+    expect(
+      screen.queryByRole('heading', { name: '患者时间线' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(/工程验证，不构成临床有效性证明/),
     ).toBeInTheDocument();
-    expect(await screen.findByText('检验系统')).toBeInTheDocument();
-    expect(screen.getByText('追踪血培养结果与医生响应')).toBeInTheDocument();
+    await navigate('患者时间线');
+    expect(await screen.findByText('检验系统')).toBeVisible();
+    expect(new URL(window.location.href).searchParams.get('view')).toBe(
+      'timeline',
+    );
   });
   it('reads patient from query and renders empty states independently', async () => {
     window.history.replaceState(null, '', '/?patient=P-EMPTY');
@@ -52,11 +94,13 @@ describe('doctor workspace', () => {
           ? json([])
           : undefined,
     );
-    render(<App />);
+    renderPage('timeline');
     expect(screen.getByLabelText('患者 ID')).toHaveValue('P-EMPTY');
     expect(await screen.findByText('此时间范围内暂无事件')).toBeInTheDocument();
-    expect(screen.getByText('暂无未闭环任务')).toBeInTheDocument();
-    expect(screen.getByText('暂无流程缺口')).toBeInTheDocument();
+    await navigate('未闭环任务');
+    expect(await screen.findByText('暂无未闭环任务')).toBeVisible();
+    await navigate('流程缺口');
+    expect(await screen.findByText('暂无流程缺口')).toBeVisible();
     expect(requests.some((r) => r.url.pathname.includes('/P-EMPTY/'))).toBe(
       true,
     );
@@ -68,9 +112,11 @@ describe('doctor workspace', () => {
         ? json({ detail: '时间线服务暂不可用' }, 503)
         : undefined,
     );
-    render(<App />);
+    renderPage('timeline');
     expect(await screen.findByText(/时间线服务暂不可用/)).toBeInTheDocument();
-    expect(await screen.findByText(finding.claim)).toBeInTheDocument();
+    await navigate('流程缺口');
+    expect(await screen.findByText(finding.claim)).toBeVisible();
+    await navigate('患者时间线');
     failed = false;
     await userEvent.click(
       within(screen.getByRole('region', { name: '患者时间线' })).getByRole(
@@ -101,10 +147,11 @@ describe('doctor workspace', () => {
             : json([])
           : undefined,
     );
-    render(<App />);
+    renderPage('timeline');
     await userEvent.clear(screen.getByLabelText('患者 ID'));
     await userEvent.type(screen.getByLabelText('患者 ID'), 'P-2002');
     await userEvent.click(screen.getByRole('button', { name: '加载患者' }));
+    await navigate('患者时间线');
     expect(await screen.findByText('NEW-PATIENT-RECORD')).toBeInTheDocument();
     await act(async () =>
       release(
@@ -127,7 +174,7 @@ describe('doctor workspace', () => {
   });
   it('shows ACT arguments collapsed and expands them on demand', async () => {
     serve();
-    render(<App />);
+    renderPage('trace');
     expect(
       await screen.findByText('读取检验结果并绑定来源'),
     ).toBeInTheDocument();
@@ -155,7 +202,7 @@ describe('doctor workspace', () => {
           ])
         : undefined,
     );
-    render(<App />);
+    renderPage('trace');
     expect(await screen.findByText('模型参与')).toBeInTheDocument();
     expect(screen.getByText(/deepseek · deepseek-chat/)).toBeInTheDocument();
     expect(screen.getByText(/错误 MODEL_TIMEOUT/)).toBeInTheDocument();
@@ -181,7 +228,7 @@ describe('doctor workspace', () => {
             ])
           : undefined,
     );
-    render(<App />);
+    renderPage('trace');
     expect(await screen.findByText('RUN-UNBOUND')).toBeInTheDocument();
     expect(screen.getByText(/错误 MODEL_TIMEOUT/)).toBeInTheDocument();
   });
@@ -198,7 +245,7 @@ describe('doctor workspace', () => {
           )
         : undefined,
     );
-    render(<App />);
+    renderPage('demo');
     await userEvent.click(
       screen.getByRole('button', { name: '发送合成查房事件' }),
     );
@@ -242,8 +289,12 @@ describe('doctor workspace', () => {
       }
       return undefined;
     });
-    render(<App />);
-    await screen.findByText('检验系统');
+    renderPage('demo');
+    await waitFor(() =>
+      expect(requests.some((r) => r.url.pathname.endsWith('/timeline'))).toBe(
+        true,
+      ),
+    );
     const before = requests.filter((r) =>
       r.url.pathname.endsWith('/timeline'),
     ).length;
@@ -261,7 +312,8 @@ describe('doctor workspace', () => {
         requests.filter((r) => r.url.pathname.endsWith('/timeline')).length,
       ).toBeGreaterThan(before),
     );
-    expect(await screen.findByText('RUN-AUTO-REFRESH')).toBeInTheDocument();
+    await navigate('Agent 运行轨迹');
+    expect(await screen.findByText('RUN-AUTO-REFRESH')).toBeVisible();
   });
   it('shows the stored model error after its run is persisted', async () => {
     let submitted = '';
@@ -289,7 +341,7 @@ describe('doctor workspace', () => {
         ]);
       return undefined;
     });
-    render(<App />);
+    renderPage('demo');
 
     await userEvent.click(
       screen.getByRole('button', { name: '发送合成查房事件' }),
@@ -324,7 +376,7 @@ describe('doctor workspace', () => {
           : json([]);
       return undefined;
     });
-    render(<App />);
+    renderPage('demo');
     await userEvent.click(
       screen.getByRole('button', { name: '发送合成查房事件' }),
     );
@@ -338,6 +390,7 @@ describe('doctor workspace', () => {
     await userEvent.clear(screen.getByLabelText('患者 ID'));
     await userEvent.type(screen.getByLabelText('患者 ID'), 'P-2002');
     await userEvent.click(screen.getByRole('button', { name: '加载患者' }));
+    await navigate('患者时间线');
     expect(await screen.findByText('此时间范围内暂无事件')).toBeInTheDocument();
     const newPatientReads = requests.filter((r) =>
       r.url.pathname.includes('/P-2002/timeline'),
@@ -375,8 +428,8 @@ describe('doctor workspace', () => {
           : json([]);
       return undefined;
     });
-    render(<App />);
-    await screen.findByText('RUN-1');
+    renderPage('demo');
+    await screen.findByRole('button', { name: '发送合成查房事件' });
     const initialRunReads = requests.filter((request) =>
       request.url.pathname.includes('/P-1001/runs'),
     ).length;
@@ -386,6 +439,7 @@ describe('doctor workspace', () => {
     await userEvent.clear(screen.getByLabelText('患者 ID'));
     await userEvent.type(screen.getByLabelText('患者 ID'), 'P-2002');
     await userEvent.click(screen.getByRole('button', { name: '加载患者' }));
+    await navigate('患者时间线');
     expect(await screen.findByText('此时间范围内暂无事件')).toBeInTheDocument();
 
     await act(async () =>
@@ -411,7 +465,7 @@ describe('doctor workspace', () => {
           )
         : undefined,
     );
-    render(<App />);
+    renderPage('demo');
     await userEvent.click(
       screen.getByRole('button', { name: '发送合成检验结果' }),
     );
@@ -448,7 +502,7 @@ describe('doctor workspace', () => {
         ]);
       return undefined;
     });
-    render(<App />);
+    renderPage('demo');
     const acknowledge = screen.getByRole('button', {
       name: '发送合成医生确认',
     });

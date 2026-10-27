@@ -6,10 +6,17 @@ import { finding, handoff, timeline } from '../test/fixtures';
 import { createDraft, identify } from '../test/interactions';
 import { json, serve } from '../test/server';
 
+function renderPage() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('view', 'handoff');
+  window.history.replaceState(null, '', url);
+  return render(<App />);
+}
+
 describe('handoff safety and editing', () => {
   it('requires explicit encounter and identity instead of a demo encounter default', async () => {
     const requests = serve();
-    render(<App />);
+    renderPage();
     expect(screen.getByRole('button', { name: '生成交接草稿' })).toBeDisabled();
     await identify();
     expect(screen.getByRole('button', { name: '生成交接草稿' })).toBeDisabled();
@@ -25,7 +32,7 @@ describe('handoff safety and editing', () => {
   });
   it('edits and saves only SBAR text; protected links are read-only', async () => {
     const requests = serve();
-    render(<App />);
+    renderPage();
     const situation = await createDraft();
     await userEvent.clear(situation);
     await userEvent.type(situation, '核对后的当前情况');
@@ -46,7 +53,7 @@ describe('handoff safety and editing', () => {
   });
   it('blocks sealing while a high-risk finding awaits review', async () => {
     serve();
-    render(<App />);
+    renderPage();
     await createDraft();
     expect(screen.getByRole('button', { name: '封存交接' })).toBeDisabled();
     expect(screen.getByText(/存在未审核事项/)).toBeInTheDocument();
@@ -57,7 +64,7 @@ describe('handoff safety and editing', () => {
         ? json({ detail: 'findings unavailable' }, 503)
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await createDraft();
     expect(screen.getByRole('button', { name: '封存交接' })).toBeDisabled();
     expect(screen.getByText(/审核状态尚未确认/)).toBeInTheDocument();
@@ -66,7 +73,7 @@ describe('handoff safety and editing', () => {
     const requests = serve((r) =>
       r.url.pathname.endsWith('/findings') ? json([]) : undefined,
     );
-    render(<App />);
+    renderPage();
     const situation = await createDraft();
     await userEvent.type(situation, ' · 已核对');
     expect(screen.getByRole('button', { name: '封存交接' })).toBeDisabled();
@@ -96,7 +103,7 @@ describe('handoff safety and editing', () => {
         ? json(++count === 1 ? [] : [finding])
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await createDraft();
     await userEvent.click(screen.getByRole('button', { name: '封存交接' }));
     await userEvent.click(screen.getByRole('button', { name: '确认封存' }));
@@ -110,7 +117,7 @@ describe('handoff safety and editing', () => {
         ? json({ detail: '草稿保存冲突' }, 409)
         : undefined,
     );
-    render(<App />);
+    renderPage();
     const situation = await createDraft();
     await userEvent.type(situation, '本地修改');
     await userEvent.click(screen.getByRole('button', { name: '保存草稿' }));
@@ -126,7 +133,7 @@ describe('handoff safety and editing', () => {
         ? json({ ...handoff, status: 'SEALED' })
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await userEvent.type(screen.getByLabelText('交接报告 ID'), 'HAND-1');
     await userEvent.click(screen.getByRole('button', { name: '打开交接报告' }));
     expect(
@@ -144,7 +151,7 @@ describe('handoff safety and editing', () => {
           })
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await userEvent.type(screen.getByLabelText('交接报告 ID'), 'HAND-1');
     await userEvent.click(screen.getByRole('button', { name: '打开交接报告' }));
     expect(
@@ -168,7 +175,7 @@ describe('handoff safety and editing', () => {
             : json([])
           : undefined,
     );
-    render(<App />);
+    renderPage();
     await identify();
     await userEvent.type(screen.getByLabelText('就诊 ID'), 'ENC-REAL-9');
     await userEvent.click(screen.getByRole('button', { name: '生成交接草稿' }));

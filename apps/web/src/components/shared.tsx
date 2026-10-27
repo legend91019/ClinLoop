@@ -9,6 +9,7 @@ export const labels: Record<string, string> = {
   LAB_RESULT_CREATED: '检验结果',
   CONSULT_NOTE_CREATED: '会诊记录',
   PROGRESS_NOTE_CREATED: '病程记录',
+  INTERVIEW_SAVED: '问诊原始对话已保存',
   HANDOFF_STARTED: '交接开始',
   PATIENT_EVIDENCE_SUBMITTED: '患者提交证据',
   CREATED: '已创建',

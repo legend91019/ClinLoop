@@ -32,9 +32,12 @@ from apps.api.app.routes import (
     evidence,
     handoff,
     health,
+    interviews,
     loops,
+    patient_workspace,
     review,
     trace,
+    workspace_agent,
 )
 from apps.api.app.settings import get_settings
 
@@ -97,6 +100,9 @@ def create_app(*, event_publisher: EventPublisher | None = None) -> FastAPI:
         application.dependency_overrides[get_event_publisher] = lambda: event_publisher
 
     application.include_router(health.router)
+    application.include_router(patient_workspace.router, prefix=settings.api_prefix)
+    application.include_router(interviews.router, prefix=settings.api_prefix)
+    application.include_router(workspace_agent.router, prefix=settings.api_prefix)
     application.include_router(events.router, prefix=settings.api_prefix)
     application.include_router(loops.router, prefix=settings.api_prefix)
     application.include_router(evidence.router, prefix=settings.api_prefix)

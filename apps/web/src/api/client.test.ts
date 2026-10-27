@@ -6,6 +6,7 @@ import { finding, handoff } from '../test/fixtures';
 const actor = { actor_id: 'DR-EXPLICIT', role: 'PHYSICIAN' as const };
 describe('ApiClient HTTP contracts', () => {
   it('defaults to localhost:8000 and uses encoded patient IDs with 24-hour timeline', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', undefined);
     const requests = serve();
     const client = new ApiClient();
     await client.listTimeline('P/a b');
