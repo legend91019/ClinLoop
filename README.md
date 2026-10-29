@@ -41,6 +41,8 @@ Agent 负责理解文本意图、规划只读检索、核对证据并提出候�
 
 ## 快速启动本地演示（Windows PowerShell，无需 Docker）
 
+要把合成病例工作台部署到华为云 ECS，采集可观测证据，并交给队友完成 AgentArts 发布与固定评测，见[华为云演示与可观测交接手册](docs/deployment/huawei-cloud-demo-handoff.md)。该手册区分 mock 演示、真实运行时轨迹与 50 例测评，并列出费用确认和交付材料。
+
 需要 Python 3.12+、Node.js 22+ 和 `uv`。在仓库根目录执行：
 
 ```powershell
