@@ -45,7 +45,10 @@ def patients(session: SessionDep):
 def seed_patients(session: SessionDep, actor: WorkspaceActor):
     from packages.fixtures.patient_workspace import seed_workspace_patients
 
-    created = seed_workspace_patients(session)
+    try:
+        created = seed_workspace_patients(session)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
     session.commit()
     return {"created": created}
 

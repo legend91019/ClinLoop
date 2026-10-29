@@ -129,6 +129,21 @@ DEMOGRAPHICS = [
 
 def seed_workspace_patients(session: Session) -> int:
     actor = ActorRef(actor_id="DR-DEMO", role="PHYSICIAN", display_name="模拟医生")
+    # Check the complete reserved ID range before making any changes. An existing
+    # patient or encounter may belong to another workflow and must not be adopted.
+    for index in range(1, len(CASES) + 1):
+        patient_id, encounter_id = f"P-200{index}", f"ENC-300{index}"
+        existing = session.get(Patient, patient_id)
+        encounter = session.get(Encounter, encounter_id)
+        if existing is not None and (
+            not existing.synthetic
+            or existing.display_name != CASES[index - 1][0]
+            or encounter is None
+            or encounter.patient_id != patient_id
+        ):
+            raise ValueError(f"模拟患者 ID 冲突：{patient_id}")
+        if existing is None and encounter is not None:
+            raise ValueError(f"模拟就诊 ID 冲突：{encounter_id}")
     created = 0
     for index, (
         name,

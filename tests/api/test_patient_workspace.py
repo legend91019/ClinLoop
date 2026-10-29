@@ -2,7 +2,13 @@
 
 from sqlalchemy import func, select
 
-from apps.api.app.db_models import ClinicalEventRow, Encounter, EventPublicationRow, OpenLoopRow
+from apps.api.app.db_models import (
+    ClinicalEventRow,
+    Encounter,
+    EventPublicationRow,
+    OpenLoopRow,
+    Patient,
+)
 
 HEADERS = {"X-Actor-Id": "DR-WORKSPACE", "X-Actor-Role": "PHYSICIAN"}
 
@@ -93,6 +99,57 @@ def test_seed_is_idempotent_and_preserves_edited_drafts(workspace):
     assert client.post("/api/v1/demo/patients", headers=HEADERS).json() == {"created": 0}
     docs = client.get(path, params={"encounter_id": p["encounter_id"]}).json()
     assert any(doc["content"] == "队友补录的内容" for doc in docs)
+
+
+def test_seed_rejects_existing_non_demo_patient_without_changing_it(workspace):
+    client, engine = workspace
+    from sqlalchemy.orm import Session
+
+    with Session(engine) as session:
+        session.add(
+            Patient(
+                patient_id="P-2001",
+                display_name="已有患者",
+                synthetic=False,
+                payload={"occupation": "原资料"},
+            )
+        )
+        session.add(
+            Encounter(encounter_id="ENC-EXISTING", patient_id="P-2001", ward="原病区", payload={})
+        )
+        session.commit()
+
+    response = client.post("/api/v1/demo/patients", headers=HEADERS)
+    assert response.status_code == 409
+    with Session(engine) as session:
+        existing = session.get(Patient, "P-2001")
+        assert existing.display_name == "已有患者"
+        assert existing.payload == {"occupation": "原资料"}
+        assert session.get(Patient, "P-2002") is None
+
+
+def test_seed_rejects_unrelated_synthetic_patient_with_reserved_ids(workspace):
+    client, engine = workspace
+    from sqlalchemy.orm import Session
+
+    with Session(engine) as session:
+        session.add(
+            Patient(
+                patient_id="P-2001",
+                display_name="另一位模拟患者",
+                synthetic=True,
+                payload={"occupation": "原资料"},
+            )
+        )
+        session.add(
+            Encounter(encounter_id="ENC-3001", patient_id="P-2001", ward="原病区", payload={})
+        )
+        session.commit()
+
+    response = client.post("/api/v1/demo/patients", headers=HEADERS)
+    assert response.status_code == 409
+    with Session(engine) as session:
+        assert session.get(Patient, "P-2001").payload == {"occupation": "原资料"}
 
 
 def test_draft_conflict_submission_evidence_and_immutability(workspace):
