@@ -79,9 +79,44 @@
 }
 .patient-page-entries {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin: 0 0 24px;
+}
+.page-entry-summary {
+  display: block;
+  margin-top: 8px;
+  color: var(--green);
+  font-size: 12px;
+}
+.task-center-navigation {
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+.task-center-navigation > strong {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--green);
+}
+.task-center-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.task-center-navigation p {
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.task-center-navigation details {
+  margin-top: 14px;
+  font-size: 13px;
+}
+.task-center-navigation details .workspace-actions {
+  margin-top: 12px;
 }
 .page-entry-card {
   display: flex;

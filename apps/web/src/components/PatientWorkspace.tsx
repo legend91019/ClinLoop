@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import {
-  Activity,
   ArrowRight,
-  ClipboardList,
   FileText,
   GitBranch,
   Layers3,
@@ -26,22 +24,16 @@ import SyntheticEventPanel from './SyntheticEventPanel';
 
 const entries = [
   {
-    page: 'patient-agent',
-    title: '患者 Agent 助手',
-    text: '审核候选任务，跟进结果与证据',
-    icon: GitBranch,
-  },
-  {
     page: 'records',
     title: '病历与查房',
-    text: '撰写、保存并提交患者记录',
+    text: '问诊转录、Agent 撰写、医生审核签署',
     icon: FileText,
   },
   {
-    page: 'followups',
-    title: '患者跟进任务',
-    text: '安排待办，填写处理结果',
-    icon: ClipboardList,
+    page: 'patient-agent',
+    title: 'Agent 任务中心',
+    text: '集中确认建议、安排待办、审核提醒与跟进结果',
+    icon: GitBranch,
   },
   {
     page: 'timeline',
@@ -50,36 +42,38 @@ const entries = [
     icon: Timer,
   },
   {
-    page: 'gaps',
-    title: '流程缺口',
-    text: '核对证据，审核待处理提示',
-    icon: Activity,
-  },
-  {
     page: 'handoff',
     title: '交接草稿',
     text: '整理本次就诊的事实与待办',
     icon: Layers3,
   },
+] as const;
+
+const taskViews = [
   {
-    page: 'loops',
-    title: '未闭环任务',
-    text: '查看等待结果与处理中的工作',
-    icon: Layers3,
+    page: 'patient-agent',
+    title: 'Agent 建议与结果',
+    text: '确认候选任务，核对新回报结果并闭环。',
   },
   {
-    page: 'trace',
-    title: 'Agent 运行轨迹',
-    text: '回顾工具调用、证据和停止原因',
-    icon: GitBranch,
+    page: 'followups',
+    title: '医生待办',
+    text: '安排人工跟进事项，处理首次查房等待办。',
   },
   {
-    page: 'demo',
-    title: '预设事件链演示',
-    text: '体验 P-1001 的完整检验演示',
-    icon: GitBranch,
+    page: 'gaps',
+    title: '提醒审核',
+    text: '查看需医生审核的提示，并核对原始证据。',
   },
 ] as const;
+const taskPages: PatientPage[] = [
+  'patient-agent',
+  'followups',
+  'gaps',
+  'loops',
+  'trace',
+  'demo',
+];
 
 export default function PatientWorkspace({
   patient,
@@ -200,49 +194,6 @@ export default function PatientWorkspace({
           />
         </div>
       )}
-      <div hidden={page !== 'overview'}>
-        <div className="metrics">
-          <div className="metric">
-            <div className="metric-icon mint">
-              <Layers3 size={19} />
-            </div>
-            <div>
-              <p>未闭环任务</p>
-              <strong>{active?.length ?? '—'}</strong>
-            </div>
-            <button className="text-button" onClick={() => onNavigate('loops')}>
-              查看任务
-            </button>
-          </div>
-          <div className="metric">
-            <div className="metric-icon peach">
-              <Activity size={19} />
-            </div>
-            <div>
-              <p>待医生审核</p>
-              <strong>{pending ?? '—'}</strong>
-            </div>
-            <button className="text-button" onClick={() => onNavigate('gaps')}>
-              前往审核
-            </button>
-          </div>
-          <div className="metric">
-            <div className="metric-icon blue">
-              <Timer size={19} />
-            </div>
-            <div>
-              <p>窗口内事件</p>
-              <strong>{timeline.data?.entries.length ?? '—'}</strong>
-            </div>
-            <button
-              className="text-button"
-              onClick={() => onNavigate('timeline')}
-            >
-              查看时间线
-            </button>
-          </div>
-        </div>
-      </div>
       {!profile && ['records', 'followups', 'patient-agent'].includes(page) && (
         <div className="page-empty">
           <h2>正在获取患者档案</h2>
@@ -252,24 +203,89 @@ export default function PatientWorkspace({
           </button>
         </div>
       )}
-      <div hidden={page !== 'overview'} className="patient-page-entries">
-        {entries
-          .filter((entry) => entry.page !== 'demo' || patient === 'P-1001')
-          .map(({ page: target, title, text, icon: Icon }) => (
-            <button
-              key={target}
-              className={`page-entry-card ${target === 'patient-agent' ? 'featured' : ''}`}
-              onClick={() => onNavigate(target)}
-            >
-              <Icon size={22} />
-              <div>
-                <strong>{title}</strong>
-                <p>{text}</p>
-              </div>
-              <ArrowRight size={18} />
-            </button>
-          ))}
-      </div>
+      <nav
+        hidden={page !== 'overview'}
+        className="patient-page-entries"
+        aria-label="患者功能"
+      >
+        {entries.map(({ page: target, title, text, icon: Icon }) => (
+          <button
+            key={target}
+            className={`page-entry-card ${target === 'patient-agent' ? 'featured' : ''}`}
+            onClick={() => onNavigate(target)}
+          >
+            <Icon size={22} />
+            <div>
+              <strong>{title}</strong>
+              <p>{text}</p>
+              {target === 'patient-agent' && (
+                <small className="page-entry-summary">
+                  {active?.length ?? '—'} 项跟进中 · {pending ?? '—'}{' '}
+                  条待审核提醒
+                </small>
+              )}
+              {target === 'timeline' && (
+                <small className="page-entry-summary">
+                  最近 {hours} 小时 · {timeline.data?.entries.length ?? '—'}{' '}
+                  条事件
+                </small>
+              )}
+            </div>
+            <ArrowRight size={18} />
+          </button>
+        ))}
+      </nav>
+      {taskPages.includes(page) && (
+        <section className="task-center-navigation" aria-label="任务中心">
+          <strong>Agent 任务中心</strong>
+          <nav aria-label="任务中心导航" className="task-center-tabs">
+            {taskViews.map((view) => (
+              <button
+                type="button"
+                key={view.page}
+                className={`button ${page === view.page ? 'primary' : ''}`}
+                aria-current={page === view.page ? 'page' : undefined}
+                onClick={() => onNavigate(view.page)}
+              >
+                {view.title}
+              </button>
+            ))}
+          </nav>
+          {taskViews.find((view) => view.page === page) && (
+            <p>{taskViews.find((view) => view.page === page)?.text}</p>
+          )}
+          <details open={['loops', 'trace', 'demo'].includes(page)}>
+            <summary>更多记录与演示</summary>
+            <div className="workspace-actions">
+              <button
+                type="button"
+                className="text-button"
+                aria-current={page === 'loops' ? 'page' : undefined}
+                onClick={() => onNavigate('loops')}
+              >
+                任务状态明细
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                aria-current={page === 'trace' ? 'page' : undefined}
+                onClick={() => onNavigate('trace')}
+              >
+                Agent 运行轨迹
+              </button>
+              {patient === 'P-1001' && (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => onNavigate('demo')}
+                >
+                  预设事件链演示
+                </button>
+              )}
+            </div>
+          </details>
+        </section>
+      )}
       {profile && opened('patient-agent') && (
         <div hidden={page !== 'patient-agent'}>
           <PatientAgentPanel
