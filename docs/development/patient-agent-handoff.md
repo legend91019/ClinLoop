@@ -25,8 +25,7 @@
 
 ```powershell
 $env:DATABASE_URL = "sqlite+pysqlite:///clinloop-local.sqlite3"
-uv run python -m scripts.init_local_trial
-uv run python -m scripts.init_patient_workspace
+uv run python -m scripts.init_product_demo
 ```
 
 已有 Alembic 管理的数据库先运行 `uv run python -m alembic upgrade head`。这次新增迁移 `0003_clinical_documents`，用于保存文书及原始对话。

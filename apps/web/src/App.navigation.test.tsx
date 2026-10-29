@@ -86,6 +86,21 @@ async function identify() {
 }
 
 describe('patient page navigation', () => {
+  it('opens the patient directory from the bare root URL', async () => {
+    mockWorkspace();
+    window.history.replaceState(null, '', '/');
+    render(<App />);
+    expect(
+      await screen.findByRole('heading', { name: /我的患者/ }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: '患者列表', level: 1 }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: '患者概览', level: 1 }),
+    ).not.toBeInTheDocument();
+  });
+
   it('keeps patient features inside the overview and provides an explicit return action', async () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=overview');

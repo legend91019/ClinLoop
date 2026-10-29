@@ -5,11 +5,11 @@
 
 ClinLoop 把医生提出的随访意图变成可追踪的任务：记录需要等待什么结果、核对结果来自哪里、提醒医生审核尚未闭环的事项，并把未完成任务带入交班草稿。它面向**华为 ICT 创新赛 AI 方向的 AgentArts 赛题**，当前以合成病例展示检验结果随访场景。
 
-> **项目状态（2026-10-08）：可本地体验的工程原型；AgentArts 画布已试运行，云端运行时和完整平台测评尚未完成。** 所有示例使用合成数据。项目不提供诊断、治疗建议或自动医嘱；现有测评不能证明临床有效性或实际节时。
+> **项目状态（2026-10-29）：可本地体验的患者工作台原型；AgentArts 画布已试运行，云端运行时和完整平台测评尚未完成。** 所有示例使用合成数据。项目不提供诊断、治疗建议或自动医嘱；现有测评不能证明临床有效性或实际节时。
 
-![本地合成病例的证据来源抽屉](docs/development/screenshots/evidence-source.jpg)
+![本地合成病例的文书起草与医生审核工作台](docs/development/screenshots/patient-agent-clinical-record.png)
 
-[查看完整医生工作台](docs/development/screenshots/doctor-console.jpg) · [查看交班草稿](docs/development/screenshots/handoff-sealed.jpg)。截图来自本地合成病例演示，不是 AgentArts 云端部署。
+[查看证据来源](docs/development/screenshots/evidence-source.jpg) · [查看交班草稿](docs/development/screenshots/handoff-sealed.jpg)。截图来自本地合成病例演示，不是 AgentArts 云端部署。
 
 ## 从一条查房记录到一次交班
 
@@ -31,9 +31,9 @@ Agent 负责理解文本意图、规划只读检索、核对证据并提出候�
 
 | 部分 | 已实现的范围 |
 | --- | --- |
-| 医生工作台 | 患者时间线、未闭环任务、流程缺口、原始证据抽屉、Agent 轨迹、医生审核、交班草稿。 |
+| 医生工作台 | 患者目录和概览、问诊原文、病历草稿与签署、跟进任务、时间线、原始证据、Agent 轨迹和交班草稿。 |
 | 在线 Worker | 事件驱动处理，意图与 Loop 的暂停、唤醒和重规划；检验结果关联及医生确认后的药敏依赖任务。 |
-| 模型接入 | 默认确定性 `mock` 演示；可选 DeepSeek 实际推理；已实现调用已发布 AgentArts 运行时的适配器。 |
+| 模型接入 | 任务分析默认确定性 `mock`，可选 DeepSeek；文书起草单独配置 DeepSeek，另有明确标记的本地模板；已实现调用已发布 AgentArts 运行时的适配器。 |
 | 工具与安全 | 只读工具白名单、患者和就诊隔离、步数与超时限制、证据来源校验、失败保守退出。 |
 | 测评 | 固定 6 例和 50 例合成在线 Worker 评测、100 条合成轨迹离线回放、人工计时分析脚本。 |
 
@@ -49,7 +49,7 @@ cd ClinLoop
 uv sync --group dev
 npm --prefix apps/web ci
 $env:DATABASE_URL = "sqlite+pysqlite:///clinloop-local.sqlite3"
-uv run python scripts/init_local_trial.py
+uv run python -m scripts.init_product_demo
 ```
 
 再打开三个 PowerShell 终端，**都进入同一个仓库目录，并使用同一个 SQLite 文件名**：
@@ -75,7 +75,11 @@ $env:VITE_API_BASE_URL = "http://127.0.0.1:8000"
 npm --prefix apps/web run dev -- --host 127.0.0.1
 ```
 
-打开 [医生工作台](http://127.0.0.1:5173/?patient=P-1001)，在“试用 Agent 事件链”中依次发送**查房记录 → 血培养结果 → 医生确认 → 药敏结果**，观察任务、证据、待审核缺口和 Agent 轨迹。API 文档在 [Swagger](http://127.0.0.1:8000/docs)。已有数据库不会被初始化命令清空；要重走空白病例，请换一个新的 SQLite 文件名。
+打开 [医生工作台](http://127.0.0.1:5173/)，默认进入患者列表。选择 `P-2001`，按**病历与查房 → 患者 Agent 助手 → 结果核对 → 交接草稿**体验产品主流程。API 文档在 [Swagger](http://127.0.0.1:8000/docs)。初始化可重复运行，不会清空已有数据库；遇到预留患者 ID 与其他档案冲突会明确失败。
+
+没有模型密钥时，在“病历与查房”选择**文书格式演示（本地模板）**，Worker 保持 `AGENT_PROVIDER=mock`；这条路径只验证界面、保存、审核和任务闭环，不代表模型效果。要体验真实文书撰写，在本机 `.env` 配置 `DEEPSEEK_API_KEY` 后重启 API 与 Worker，并选择**正式病历草稿（真实模型）**。任务分析与文书撰写独立配置；真实任务分析还需将 Worker 的 `AGENT_PROVIDER` 设为 `deepseek`。不要把本地模板或 mock 的结果当作 LLM 测评。
+
+旧版 `P-1001` 预设检验事件链保留在患者概览的“预设事件链演示”中，供高级演示及回归使用；新用户请从 `P-2001` 工作台开始。
 
 使用真实 DeepSeek 模型时，按[本地试用指南](docs/development/deepseek-agent-trial.md)在 **Worker 终端**安全输入新密钥并把 `AGENT_PROVIDER` 改为 `deepseek`。模型 API 可能计费；曾在聊天中发送的密钥应撤销并更换。PostgreSQL / Redis 和固定种子 Demo 见[演示手册](docs/demo/runbook.md)。
 
@@ -89,7 +93,7 @@ npm --prefix apps/web run dev -- --host 127.0.0.1
 
 患者 Agent 已接入提交记录：Worker 读取当前就诊记录、提出带原文的候选任务；医生确认后建立等待或人工跟进任务。当前患者的模拟检验结果可唤醒原有证据校验链；医生确认查看后闭环，并可继续建立药敏依赖。页面展示分析、任务、证据和工具轨迹。默认 mock 为明确标记的确定性演示，非真实模型效果。
 
-使用同一数据库运行 `python -m scripts.init_patient_workspace` 后重启服务，打开 `/?patient=P-2001`。先填写医生身份，再选择患者开始录入。操作步骤、迁移与接口见[患者工作台说明](docs/development/patient-workspace.md)。
+上述统一初始化命令已创建六位工作台患者；打开 `/` 后选择患者，填写医生身份即可录入。操作步骤、迁移与接口见[患者工作台说明](docs/development/patient-workspace.md)。
 
 ```mermaid
 flowchart LR

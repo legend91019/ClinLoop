@@ -27,7 +27,9 @@ export function readLocation(): WorkspaceLocation {
     encounter: url.searchParams.get('encounter')?.trim() || undefined,
     page: patientPages.includes(requested as PatientPage)
       ? (requested as PatientPage)
-      : 'overview',
+      : url.searchParams.has('patient')
+        ? 'overview'
+        : 'patients',
   };
 }
 

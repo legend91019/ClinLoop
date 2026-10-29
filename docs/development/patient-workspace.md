@@ -8,12 +8,12 @@
 
 ```powershell
 $env:DATABASE_URL = "sqlite+pysqlite:///clinloop-local.sqlite3"
-python -m scripts.init_patient_workspace
+uv run python -m scripts.init_product_demo
 ```
 
-命令只添加缺少的表和 6 位模拟患者（`P-2001` 至 `P-2006`），保留现有数据。再次运行不会覆盖用户修改的草稿或重复创建示例任务。已使用 Alembic 管理的数据库应先运行 `python -m alembic upgrade head`，新增迁移为 `0003`。
+命令准备旧版 `P-1001` 回归病例和 6 位模拟工作台患者（`P-2001` 至 `P-2006`），保留现有数据。再次运行不会覆盖用户修改的草稿或重复创建示例任务；预留 ID 与其他档案冲突时明确失败。已使用 Alembic 管理的数据库应先运行 `uv run python -m alembic upgrade head`，新增迁移为 `0003`。
 
-重新启动 API 与 Worker，启动前端后打开 `http://127.0.0.1:5173/?patient=P-2001`。API 端口按本机配置设置，前端 `VITE_API_BASE_URL` 必须与之对应。
+重新启动 API 与 Worker，启动前端后打开 `http://127.0.0.1:5173/`，从患者列表选择 `P-2001`。API 端口按本机配置设置，前端 `VITE_API_BASE_URL` 必须与之对应。三个终端必须指向同一个数据库。
 
 ## 操作流程
 
