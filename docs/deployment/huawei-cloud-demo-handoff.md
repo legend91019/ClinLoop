@@ -132,7 +132,7 @@ git pull --ff-only
 npm --prefix apps/web ci
 $env:VITE_API_BASE_URL = ""
 npm --prefix apps/web run build
-scp -r apps/web/dist ubuntu@<EIP>:/home/ubuntu/ClinLoop/web-dist
+scp -r apps/web/dist ubuntu@YOUR_EIP:/home/ubuntu/ClinLoop/web-dist
 ```
 
 `scp` 使用团队自己的 SSH 密钥；如无 EIP，可通过云控制台文件传输或堡垒机上传。ECS 上将构建产物放到 Nginx 可读目录：
@@ -169,10 +169,10 @@ curl -fsS http://127.0.0.1:8080/api/v1/patients
 若默认 Nginx 站点仍启用，不影响本方案的 `127.0.0.1:8080`。在队长电脑开 SSH 隧道，再浏览 `http://127.0.0.1:8080/`：
 
 ```powershell
-ssh -L 8080:127.0.0.1:8080 ubuntu@<EIP>
+ssh -L 8080:127.0.0.1:8080 ubuntu@YOUR_EIP
 ```
 
-如果本机 8080 已占用，改用 `ssh -L 18080:127.0.0.1:8080 ...` 并打开 `http://127.0.0.1:18080/`。语音转录需要浏览器权限和安全上下文；私有预览先用粘贴文本，正式 HTTPS 再检查麦克风。**公网赛事链接**由队友另配域名/TLS 和可信身份网关，先验证费用与访问控制，再开放安全组 443；业务 API 仍仅监听 127.0.0.1。没有网关时，保持 SSH 隧道私有演示。
+把 `YOUR_EIP` 换成 ECS 的真实 EIP。如果本机 8080 已占用，改用 `ssh -L 18080:127.0.0.1:8080 ...` 并打开 `http://127.0.0.1:18080/`。语音转录需要浏览器权限和安全上下文；私有预览先用粘贴文本，正式 HTTPS 再检查麦克风。**公网赛事链接**由队友另配域名/TLS 和可信身份网关，先验证费用与访问控制，再开放安全组 443；业务 API 仍仅监听 127.0.0.1。没有网关时，保持 SSH 隧道私有演示。
 
 ## 5. 一条真正经过数据库和 Worker 的演示
 
