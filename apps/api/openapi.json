@@ -54,6 +54,1492 @@
         }
       }
     },
+    "/api/v1/patients": {
+      "get": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Patients",
+        "operationId": "patients_api_v1_patients_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PatientSummary"
+                  },
+                  "title": "Response Patients Api V1 Patients Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Create Patient",
+        "operationId": "create_patient_api_v1_patients_post",
+        "parameters": [
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/demo/patients": {
+      "post": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Seed Patients",
+        "operationId": "seed_patients_api_v1_demo_patients_post",
+        "parameters": [
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/documents": {
+      "get": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Documents",
+        "operationId": "documents_api_v1_patients__patient_id__documents_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "encounter_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Encounter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentResponse"
+                  },
+                  "title": "Response Documents Api V1 Patients  Patient Id  Documents Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Create Document",
+        "operationId": "create_document_api_v1_patients__patient_id__documents_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/documents/{document_id}": {
+      "patch": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Edit Document",
+        "operationId": "edit_document_api_v1_patients__patient_id__documents__document_id__patch",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentEdit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/documents/{document_id}/submit": {
+      "post": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Submit Document",
+        "operationId": "submit_document_api_v1_patients__patient_id__documents__document_id__submit_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/tasks": {
+      "get": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Tasks",
+        "operationId": "tasks_api_v1_patients__patient_id__tasks_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "encounter_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Encounter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskResponse"
+                  },
+                  "title": "Response Tasks Api V1 Patients  Patient Id  Tasks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Create Task",
+        "operationId": "create_task_api_v1_patients__patient_id__tasks_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/tasks/{loop_id}": {
+      "patch": {
+        "tags": [
+          "patient workspace"
+        ],
+        "summary": "Update Task",
+        "operationId": "update_task_api_v1_patients__patient_id__tasks__loop_id__patch",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clinical-writing/config": {
+      "get": {
+        "tags": [
+          "consultation transcription"
+        ],
+        "summary": "Writing Config",
+        "operationId": "writing_config_api_v1_clinical_writing_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/first-round": {
+      "get": {
+        "tags": [
+          "consultation transcription"
+        ],
+        "summary": "First Round",
+        "operationId": "first_round_api_v1_patients__patient_id__first_round_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "encounter_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Encounter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/interviews": {
+      "get": {
+        "tags": [
+          "consultation transcription"
+        ],
+        "summary": "Interviews",
+        "operationId": "interviews_api_v1_patients__patient_id__interviews_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "encounter_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Encounter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "consultation transcription"
+        ],
+        "summary": "Save",
+        "operationId": "save_api_v1_patients__patient_id__interviews_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/interviews/{interview_id}/retry": {
+      "post": {
+        "tags": [
+          "consultation transcription"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_api_v1_patients__patient_id__interviews__interview_id__retry_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "interview_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Interview Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/interviews/{interview_id}/draft": {
+      "post": {
+        "tags": [
+          "consultation transcription"
+        ],
+        "summary": "Redraft",
+        "operationId": "redraft_api_v1_patients__patient_id__interviews__interview_id__draft_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "interview_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Interview Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewRedraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/agent-workspace": {
+      "get": {
+        "tags": [
+          "patient agent"
+        ],
+        "summary": "Workspace",
+        "operationId": "workspace_api_v1_patients__patient_id__agent_workspace_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "encounter_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Encounter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/documents/{document_id}/analyze": {
+      "post": {
+        "tags": [
+          "patient agent"
+        ],
+        "summary": "Analyze",
+        "operationId": "analyze_api_v1_patients__patient_id__documents__document_id__analyze_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/documents/{document_id}/candidates/{candidate_id}/review": {
+      "post": {
+        "tags": [
+          "patient agent"
+        ],
+        "summary": "Review",
+        "operationId": "review_api_v1_patients__patient_id__documents__document_id__candidates__candidate_id__review_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/agent-labs": {
+      "post": {
+        "tags": [
+          "patient agent"
+        ],
+        "summary": "Lab",
+        "operationId": "lab_api_v1_patients__patient_id__agent_labs_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/agent-tasks/{loop_id}/acknowledge": {
+      "post": {
+        "tags": [
+          "patient agent"
+        ],
+        "summary": "Acknowledge",
+        "operationId": "acknowledge_api_v1_patients__patient_id__agent_tasks__loop_id__acknowledge_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "X-Actor-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Id"
+            }
+          },
+          {
+            "name": "X-Actor-Role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Actor-Role"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResultAcknowledgement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/events": {
       "post": {
         "tags": [
@@ -900,6 +2386,117 @@
           }
         }
       }
+    },
+    "/api/v1/patients/{patient_id}/runs": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Patient Runs",
+        "operationId": "patient_runs_api_v1_patients__patient_id__runs_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agentarts/tools/{tool_name}": {
+      "post": {
+        "tags": [
+          "agentarts-tools"
+        ],
+        "summary": "Call Read Tool",
+        "description": "A trigger ID fixes the patient and cutoff time; callers cannot choose a future snapshot.",
+        "operationId": "call_read_tool_api_v1_agentarts_tools__tool_name__post",
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          },
+          {
+            "name": "X-ClinLoop-Tool-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Clinloop-Tool-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Call Read Tool Api V1 Agentarts Tools  Tool Name  Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -936,6 +2533,30 @@
         ],
         "title": "ActorRef",
         "description": "Who or what produced a record."
+      },
+      "CandidateReview": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "ACCEPT",
+              "REJECT"
+            ],
+            "title": "Action"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "CandidateReview"
       },
       "ClinicalEvent": {
         "properties": {
@@ -1001,6 +2622,234 @@
         "title": "ClinicalEvent",
         "description": "An inbound clinical event on the event stream.\n\n``source_time`` is when the source system recorded it; ``event_time``\nis when it occurred in the patient's timeline. They may differ\n(transcription lag) and are kept separate on purpose."
       },
+      "DocumentCreate": {
+        "properties": {
+          "encounter_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Encounter Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADMISSION",
+              "ROUND",
+              "PROGRESS"
+            ],
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 30000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "encounter_id",
+          "kind",
+          "title",
+          "content"
+        ],
+        "title": "DocumentCreate"
+      },
+      "DocumentEdit": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 30000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "title",
+          "content"
+        ],
+        "title": "DocumentEdit"
+      },
+      "DocumentResponse": {
+        "properties": {
+          "encounter_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Encounter Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADMISSION",
+              "ROUND",
+              "PROGRESS"
+            ],
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 30000,
+            "minLength": 1,
+            "title": "Content"
+          },
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "author_id": {
+            "type": "string",
+            "title": "Author Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "encounter_id",
+          "kind",
+          "title",
+          "content",
+          "document_id",
+          "patient_id",
+          "status",
+          "revision",
+          "author_id",
+          "created_at",
+          "updated_at",
+          "submitted_at",
+          "event_id"
+        ],
+        "title": "DocumentResponse"
+      },
+      "DocumentSubmit": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "signature_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature Name"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision"
+        ],
+        "title": "DocumentSubmit"
+      },
       "EventAcceptedResponse": {
         "properties": {
           "event_id": {
@@ -1036,7 +2885,8 @@
           "CONSULT_NOTE_CREATED",
           "PROGRESS_NOTE_CREATED",
           "HANDOFF_STARTED",
-          "PATIENT_EVIDENCE_SUBMITTED"
+          "PATIENT_EVIDENCE_SUBMITTED",
+          "INTERVIEW_SAVED"
         ],
         "title": "EventType",
         "description": "Clinical event types ingested by the workflow (≥6 required by the spec)."
@@ -1375,6 +3225,122 @@
         "title": "IntentSummary",
         "description": "Compact intent projection."
       },
+      "InterviewCreate": {
+        "properties": {
+          "encounter_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Encounter Id"
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 48,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9-]+$",
+            "title": "Request Id"
+          },
+          "transcript": {
+            "type": "string",
+            "maxLength": 25000,
+            "minLength": 5,
+            "title": "Transcript"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADMISSION",
+              "ROUND",
+              "PROGRESS"
+            ],
+            "title": "Kind",
+            "default": "ADMISSION"
+          },
+          "draft_mode": {
+            "type": "string",
+            "enum": [
+              "CLINICAL",
+              "DEMO"
+            ],
+            "title": "Draft Mode",
+            "default": "CLINICAL"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "encounter_id",
+          "request_id",
+          "transcript"
+        ],
+        "title": "InterviewCreate"
+      },
+      "InterviewRedraft": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 48,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9-]+$",
+            "title": "Request Id"
+          },
+          "draft_mode": {
+            "type": "string",
+            "enum": [
+              "CLINICAL",
+              "DEMO"
+            ],
+            "title": "Draft Mode",
+            "default": "CLINICAL"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id"
+        ],
+        "title": "InterviewRedraft"
+      },
+      "LabInput": {
+        "properties": {
+          "encounter_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Encounter Id"
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "panel": {
+            "type": "string",
+            "enum": [
+              "blood_culture_result",
+              "susceptibility_result",
+              "blood_count_result",
+              "renal_function_result"
+            ],
+            "title": "Panel"
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Result"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "encounter_id",
+          "request_id",
+          "panel",
+          "result"
+        ],
+        "title": "LabInput"
+      },
       "LoopDetailResponse": {
         "properties": {
           "loop": {
@@ -1516,6 +3482,269 @@
         "title": "LoopSummary",
         "description": "Compact loop projection for list endpoints."
       },
+      "PatientCreate": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "男",
+              "女",
+              "未说明"
+            ],
+            "title": "Sex",
+            "default": "未说明"
+          },
+          "age": {
+            "type": "integer",
+            "maximum": 120.0,
+            "minimum": 0.0,
+            "title": "Age",
+            "default": 40
+          },
+          "ethnicity": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Ethnicity",
+            "default": "未记录"
+          },
+          "marital_status": {
+            "type": "string",
+            "enum": [
+              "未记录",
+              "未婚",
+              "已婚",
+              "离异",
+              "丧偶",
+              "其他"
+            ],
+            "title": "Marital Status",
+            "default": "未记录"
+          },
+          "birthplace": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Birthplace",
+            "default": "未记录"
+          },
+          "occupation": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Occupation",
+            "default": "未记录"
+          },
+          "admitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admitted At"
+          },
+          "ward": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Ward",
+            "default": "模拟病区"
+          },
+          "bed": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Bed",
+            "default": ""
+          },
+          "chief_complaint": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Chief Complaint",
+            "default": ""
+          },
+          "history": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "History",
+            "default": ""
+          },
+          "allergies": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Allergies",
+            "default": "未记录"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display_name"
+        ],
+        "title": "PatientCreate"
+      },
+      "PatientSummary": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "男",
+              "女",
+              "未说明"
+            ],
+            "title": "Sex",
+            "default": "未说明"
+          },
+          "age": {
+            "type": "integer",
+            "maximum": 120.0,
+            "minimum": 0.0,
+            "title": "Age",
+            "default": 40
+          },
+          "ethnicity": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Ethnicity",
+            "default": "未记录"
+          },
+          "marital_status": {
+            "type": "string",
+            "enum": [
+              "未记录",
+              "未婚",
+              "已婚",
+              "离异",
+              "丧偶",
+              "其他"
+            ],
+            "title": "Marital Status",
+            "default": "未记录"
+          },
+          "birthplace": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Birthplace",
+            "default": "未记录"
+          },
+          "occupation": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Occupation",
+            "default": "未记录"
+          },
+          "admitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admitted At"
+          },
+          "ward": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Ward",
+            "default": "模拟病区"
+          },
+          "bed": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Bed",
+            "default": ""
+          },
+          "chief_complaint": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Chief Complaint",
+            "default": ""
+          },
+          "history": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "History",
+            "default": ""
+          },
+          "allergies": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Allergies",
+            "default": "未记录"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "encounter_id": {
+            "type": "string",
+            "title": "Encounter Id"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic"
+          },
+          "open_tasks": {
+            "type": "integer",
+            "title": "Open Tasks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display_name",
+          "admitted_at",
+          "patient_id",
+          "encounter_id",
+          "synthetic",
+          "open_tasks"
+        ],
+        "title": "PatientSummary"
+      },
+      "ResultAcknowledgement": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "next_panel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "susceptibility_result"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Panel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "ResultAcknowledgement"
+      },
       "ReviewAction": {
         "type": "string",
         "enum": [
@@ -1580,6 +3809,227 @@
           "review_status"
         ],
         "title": "ReviewResponse"
+      },
+      "TaskCreate": {
+        "properties": {
+          "encounter_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Encounter Id"
+          },
+          "goal": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Goal"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "title": "Priority",
+            "default": "NORMAL"
+          },
+          "owner": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Owner"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "encounter_id",
+          "goal",
+          "owner"
+        ],
+        "title": "TaskCreate"
+      },
+      "TaskHistory": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "actor_id": {
+            "type": "string",
+            "title": "Actor Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "actor_id",
+          "reason",
+          "created_at"
+        ],
+        "title": "TaskHistory"
+      },
+      "TaskResponse": {
+        "properties": {
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "encounter_id": {
+            "type": "string",
+            "title": "Encounter Id"
+          },
+          "goal": {
+            "type": "string",
+            "title": "Goal"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "system_managed": {
+            "type": "boolean",
+            "title": "System Managed",
+            "default": false
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/TaskHistory"
+            },
+            "type": "array",
+            "title": "History"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "loop_id",
+          "patient_id",
+          "encounter_id",
+          "goal",
+          "state",
+          "priority",
+          "owner",
+          "due_at",
+          "source_document_id",
+          "history"
+        ],
+        "title": "TaskResponse"
+      },
+      "TaskUpdate": {
+        "properties": {
+          "expected_state": {
+            "type": "string",
+            "title": "Expected State"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "RESOLVED",
+              "CANCELLED"
+            ],
+            "title": "State"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_state",
+          "state",
+          "reason"
+        ],
+        "title": "TaskUpdate"
       },
       "TimelineEntry": {
         "properties": {
@@ -1670,6 +4120,25 @@
         ],
         "title": "TimelineResponse",
         "description": "``GET /api/v1/patients/{patient_id}/timeline`` payload."
+      },
+      "ToolRequest": {
+        "properties": {
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "trigger_event_id": {
+            "type": "string",
+            "title": "Trigger Event Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "patient_id",
+          "trigger_event_id"
+        ],
+        "title": "ToolRequest"
       },
       "TrustLevel": {
         "type": "string",

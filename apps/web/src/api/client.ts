@@ -12,6 +12,17 @@ import type {
   ReviewResponse,
   TimelineResponse,
 } from './types';
+import type {
+  AgentWorkspace,
+  ClinicalDocument,
+  DocumentKind,
+  ManagedTask,
+  PatientCreate,
+  PatientProfile,
+  Interview,
+  FirstRoundStatus,
+  DraftMode,
+} from './workspaceTypes';
 
 export class ApiError extends Error {
   constructor(
@@ -36,6 +47,241 @@ function actorHeaders(actor: Clinician): Record<string, string> {
 }
 
 export class ApiClient {
+  clinicalWritingConfig(signal?: AbortSignal) {
+    return this.request<{
+      configured: boolean;
+      provider: string;
+      model: string;
+    }>('/clinical-writing/config', { signal });
+  }
+  redraftInterview(
+    patient: string,
+    interview: string,
+    body: { request_id: string; draft_mode: DraftMode },
+    actor: Clinician,
+  ) {
+    return this.request<Interview>(
+      `/patients/${encodeURIComponent(patient)}/interviews/${encodeURIComponent(interview)}/draft`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+  }
+  firstRound(patient: string, encounter: string, signal?: AbortSignal) {
+    return this.request<FirstRoundStatus>(
+      `/patients/${encodeURIComponent(patient)}/first-round?encounter_id=${encodeURIComponent(encounter)}`,
+      { signal },
+    );
+  }
+  listInterviews(patient: string, encounter: string, signal?: AbortSignal) {
+    return this.request<Interview[]>(
+      `/patients/${encodeURIComponent(patient)}/interviews?encounter_id=${encodeURIComponent(encounter)}`,
+      { signal },
+    );
+  }
+  saveInterview(
+    patient: string,
+    body: {
+      encounter_id: string;
+      request_id: string;
+      transcript: string;
+      kind: DocumentKind;
+      draft_mode?: DraftMode;
+    },
+    actor: Clinician,
+  ) {
+    return this.request<Interview>(
+      `/patients/${encodeURIComponent(patient)}/interviews`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+  }
+  retryInterview(patient: string, interview: string, actor: Clinician) {
+    return this.request<Interview>(
+      `/patients/${encodeURIComponent(patient)}/interviews/${encodeURIComponent(interview)}/retry`,
+      {
+        method: 'POST',
+        headers: actorHeaders(actor),
+      },
+    );
+  }
+  getAgentWorkspace(patient: string, encounter: string, signal?: AbortSignal) {
+    return this.request<AgentWorkspace>(
+      `/patients/${encodeURIComponent(patient)}/agent-workspace?encounter_id=${encodeURIComponent(encounter)}`,
+      { signal },
+    );
+  }
+  analyzePatientDocument(patient: string, document: string, actor: Clinician) {
+    return this.request(
+      `/patients/${encodeURIComponent(patient)}/documents/${encodeURIComponent(document)}/analyze`,
+      { method: 'POST', headers: actorHeaders(actor) },
+    );
+  }
+  reviewAgentCandidate(
+    patient: string,
+    document: string,
+    candidate: string,
+    action: 'ACCEPT' | 'REJECT',
+    reason: string,
+    actor: Clinician,
+  ) {
+    return this.request(
+      `/patients/${encodeURIComponent(patient)}/documents/${encodeURIComponent(document)}/candidates/${encodeURIComponent(candidate)}/review`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason }),
+      },
+    );
+  }
+  sendAgentLab(
+    patient: string,
+    body: {
+      encounter_id: string;
+      request_id: string;
+      panel: string;
+      result: string;
+    },
+    actor: Clinician,
+  ) {
+    return this.request<{ event_id: string; accepted: boolean }>(
+      `/patients/${encodeURIComponent(patient)}/agent-labs`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+  }
+  acknowledgeAgentResult(
+    patient: string,
+    loop: string,
+    reason: string,
+    next_panel: string | null,
+    actor: Clinician,
+  ) {
+    return this.request<{ event_id: string; accepted: boolean }>(
+      `/patients/${encodeURIComponent(patient)}/agent-tasks/${encodeURIComponent(loop)}/acknowledge`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason, next_panel }),
+      },
+    );
+  }
+  listPatients(signal?: AbortSignal) {
+    return this.request<PatientProfile[]>('/patients', { signal });
+  }
+  createPatient(body: PatientCreate, actor: Clinician) {
+    return this.request<PatientProfile>('/patients', {
+      method: 'POST',
+      headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+  seedPatients(actor: Clinician) {
+    return this.request<{ created: number }>('/demo/patients', {
+      method: 'POST',
+      headers: actorHeaders(actor),
+    });
+  }
+  listDocuments(patient: string, encounter: string, signal?: AbortSignal) {
+    return this.request<ClinicalDocument[]>(
+      `/patients/${encodeURIComponent(patient)}/documents?encounter_id=${encodeURIComponent(encounter)}`,
+      { signal },
+    );
+  }
+  saveDocument(
+    patient: string,
+    body: {
+      encounter_id: string;
+      kind: DocumentKind;
+      title: string;
+      content: string;
+    },
+    actor: Clinician,
+    existing?: ClinicalDocument,
+  ) {
+    return this.request<ClinicalDocument>(
+      `/patients/${encodeURIComponent(patient)}/documents${existing ? `/${encodeURIComponent(existing.document_id)}` : ''}`,
+      {
+        method: existing ? 'PATCH' : 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          existing
+            ? {
+                title: body.title,
+                content: body.content,
+                revision: existing.revision,
+              }
+            : body,
+        ),
+      },
+    );
+  }
+  submitDocument(
+    patient: string,
+    document: ClinicalDocument,
+    actor: Clinician,
+    signature?: { signature_name: string; confirmed: boolean },
+  ) {
+    return this.request<ClinicalDocument>(
+      `/patients/${encodeURIComponent(patient)}/documents/${encodeURIComponent(document.document_id)}/submit`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision: document.revision, ...signature }),
+      },
+    );
+  }
+  listManagedTasks(patient: string, encounter: string, signal?: AbortSignal) {
+    return this.request<ManagedTask[]>(
+      `/patients/${encodeURIComponent(patient)}/tasks?encounter_id=${encodeURIComponent(encounter)}`,
+      { signal },
+    );
+  }
+  createManagedTask(
+    patient: string,
+    body: {
+      encounter_id: string;
+      goal: string;
+      priority: string;
+      owner: string;
+      due_at: string | null;
+      source_document_id: string | null;
+    },
+    actor: Clinician,
+  ) {
+    return this.request<ManagedTask>(
+      `/patients/${encodeURIComponent(patient)}/tasks`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+  }
+  updateManagedTask(
+    patient: string,
+    task: Pick<ManagedTask, 'loop_id' | 'state'>,
+    state: string,
+    reason: string,
+    actor: Clinician,
+  ) {
+    return this.request<ManagedTask>(
+      `/patients/${encodeURIComponent(patient)}/tasks/${encodeURIComponent(task.loop_id)}`,
+      {
+        method: 'PATCH',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expected_state: task.state, state, reason }),
+      },
+    );
+  }
   private prefix: string;
   constructor(
     public baseUrl = import.meta.env.VITE_API_BASE_URL ??

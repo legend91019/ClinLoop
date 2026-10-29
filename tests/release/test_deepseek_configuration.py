@@ -15,4 +15,4 @@ def test_mock_provider_does_not_enable_network_from_a_key() -> None:
 
 def test_deepseek_provider_requires_a_key() -> None:
     with pytest.raises(ValueError, match="DEEPSEEK_API_KEY"):
-        build_model_provider(Settings(agent_provider="deepseek"))
+        build_model_provider(Settings(agent_provider="deepseek", deepseek_api_key=""))

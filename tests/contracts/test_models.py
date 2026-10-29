@@ -112,8 +112,9 @@ def test_clinical_event_rejects_source_time_far_before_event_time() -> None:
         make_event(source_time=T0 - timedelta(hours=2))
 
 
-def test_all_seven_event_types_are_declared() -> None:
-    assert len(EventType) == 7
+def test_all_eight_event_types_are_declared() -> None:
+    assert len(EventType) == 8
+    assert EventType.INTERVIEW_SAVED.value == "INTERVIEW_SAVED"
     for name in (
         "NOTE_CREATED",
         "ORDER_UPDATED",

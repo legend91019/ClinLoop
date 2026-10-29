@@ -36,6 +36,10 @@ def main(argv: list[str] | None = None) -> int:
     agent = WorkflowAgent(provider=build_model_provider(settings))
     try:
         while True:
+            from apps.api.app.services.round_reminder_service import sync_round_reminders
+
+            with session_scope(engine) as session:
+                sync_round_reminders(session)
             if mode == "database":
                 with session_scope(engine) as session:
                     runs = process_pending_database_events(session, agent, limit=args.count)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from apps.api.app.db_models import EventPublicationRow
+from apps.api.app.db_models import EventPublicationRow, OpenLoopRow
 from apps.api.app.repositories import (
     AgentRunRepository as DbAgentRunRepository,
 )
@@ -85,6 +85,9 @@ def hydrate_memory(session: Session, trigger: ClinicalEvent, memory: WorkflowMem
         if intent.source_event_id is None or intent.source_event_id in visible_ids:
             memory.save_intent(intent)
     for loop in LoopRepository(session).list_for_patient(trigger.patient_id):
+        row = session.get(OpenLoopRow, loop.loop_id)
+        if row and row.payload.get("managed_by") == "first_round":
+            continue
         if loop.intent_id not in memory.intents:
             continue
         if loop.last_planned_at is not None and loop.last_planned_at > trigger.source_time:
@@ -103,6 +106,16 @@ def process_event(session: Session, agent: WorkflowAgent, event: ClinicalEvent):
     if existing is not None:
         return existing
 
+    if event.event_type == EventType.INTERVIEW_SAVED:
+        from apps.worker.worker.clinical_note_workflow import generate_interview_note
+
+        return generate_interview_note(session, event)
+
+    if event.payload.get("document_id") and event.payload.get("document_kind"):
+        from apps.worker.worker.document_agent import analyze_document
+
+        return analyze_document(session, agent, event)
+
     agent.memory = WorkflowMemory()
     hydrate_memory(session, event, agent.memory)
     agent.runs = MemoryRunRepository()
@@ -120,6 +133,15 @@ def process_event(session: Session, agent: WorkflowAgent, event: ClinicalEvent):
     for loop in agent.memory.loops.values():
         if loop.patient_id == event.patient_id:
             loop_repo.upsert(loop)
+            for parent_id in loop.depends_on:
+                parent_row = session.get(OpenLoopRow, parent_id)
+                if parent_row and parent_row.payload.get("managed_by") == "workspace_agent":
+                    child = session.get(OpenLoopRow, loop.loop_id)
+                    child.payload = {
+                        **child.payload,
+                        "managed_by": "workspace_agent",
+                        "source_document_id": parent_row.payload.get("source_document_id"),
+                    }
 
     evidence_repo = EvidenceRepository(session)
     for evidence in agent.memory.evidence.values():
@@ -187,6 +209,16 @@ def process_event(session: Session, agent: WorkflowAgent, event: ClinicalEvent):
                 reviewer=event.actor,
                 source_run_id=persisted.run_id,
             )
+            if event.payload.get("workspace_close_after_ack") is True:
+                row = session.get(OpenLoopRow, persisted.loop_id)
+                if row.payload.get("managed_by") == "workspace_agent":
+                    loop_repo.apply_transition(
+                        persisted.loop_id,
+                        LoopState.RESOLVED,
+                        reviewer=event.actor,
+                        reason=str(event.payload.get("text", "医生确认已查看结果")),
+                        source_run_id=persisted.run_id,
+                    )
     AuditRepository(session).append(
         entity_type="agent_run",
         entity_id=persisted.run_id,

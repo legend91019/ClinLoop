@@ -23,6 +23,33 @@ from packages.fixtures import MAIN_PATIENT_ID, seed_demo_case
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.fixture
+def workspace(tmp_path, monkeypatch):
+    from sqlalchemy.orm import Session
+
+    from apps.api.app.db import build_engine, get_session
+    from apps.api.app.main import create_app
+    from apps.api.app.settings import get_settings
+
+    url = f"sqlite+pysqlite:///{(tmp_path / 'workspace.sqlite3').as_posix()}"
+    monkeypatch.setenv("DATABASE_URL", url)
+    monkeypatch.setenv("EVENT_BUS", "database")
+    get_settings.cache_clear()
+    engine = build_engine(url)
+    create_schema(engine)
+    app = create_app()
+
+    def sessions():
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = sessions
+    with TestClient(app) as test_client:
+        yield test_client, engine
+    engine.dispose()
+    get_settings.cache_clear()
+
+
 @pytest.fixture(scope="session")
 def api_database_url() -> str:
     override = os.environ.get("CLINLOOP_TEST_DATABASE_URL")

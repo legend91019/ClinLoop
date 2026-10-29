@@ -6,10 +6,17 @@ import { evidence, finding, source, timeline } from '../test/fixtures';
 import { identify } from '../test/interactions';
 import { json, serve } from '../test/server';
 
+function renderPage() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('view', 'gaps');
+  window.history.replaceState(null, '', url);
+  return render(<App />);
+}
+
 describe('finding review', () => {
   it('requires explicitly entered clinician identity', async () => {
     serve();
-    render(<App />);
+    renderPage();
     expect(await screen.findByText(finding.claim)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '接受' })).toBeDisabled();
     await identify();
@@ -17,7 +24,7 @@ describe('finding review', () => {
   });
   it('accepts with entered actor headers and preserves original claim and evidence', async () => {
     const requests = serve();
-    render(<App />);
+    renderPage();
     await identify();
     await userEvent.click(await screen.findByRole('button', { name: '接受' }));
     await userEvent.click(
@@ -42,7 +49,7 @@ describe('finding review', () => {
   });
   it('rejects whitespace reason locally then submits a meaningful rejection without deleting finding', async () => {
     const requests = serve();
-    render(<App />);
+    renderPage();
     await identify();
     await userEvent.click(await screen.findByRole('button', { name: '驳回' }));
     const dialog = screen.getByRole('dialog', { name: '驳回流程缺口' });
@@ -75,7 +82,7 @@ describe('finding review', () => {
         ? json({ detail: '审核暂不可用' }, 503)
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await identify();
     await userEvent.click(await screen.findByRole('button', { name: '驳回' }));
     await userEvent.type(screen.getByLabelText('审核理由'), '待核实来源');
@@ -91,7 +98,7 @@ describe('finding review', () => {
 describe('evidence drawer', () => {
   it('wraps keyboard focus from the scrollable raw record to the drawer close button', async () => {
     serve();
-    render(<App />);
+    renderPage();
     await userEvent.click(
       await screen.findByRole('button', { name: '查看证据 EVI-1' }),
     );
@@ -107,7 +114,7 @@ describe('evidence drawer', () => {
   });
   it('keeps the drawer outside the inert workspace and restores focus on Escape', async () => {
     serve();
-    render(<App />);
+    renderPage();
     const trigger = await screen.findByRole('button', {
       name: '查看证据 EVI-1',
     });
@@ -127,7 +134,7 @@ describe('evidence drawer', () => {
         ? json({ ...evidence, source_id: source.event_id })
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await userEvent.click(
       await screen.findByRole('button', { name: '查看证据 EVI-1' }),
     );
@@ -139,7 +146,7 @@ describe('evidence drawer', () => {
   });
   it('shows patient-reported trust separately and full raw source record; discovers encounter explicitly', async () => {
     serve();
-    render(<App />);
+    renderPage();
     await userEvent.click(
       await screen.findByRole('button', { name: '查看证据 EVI-1' }),
     );
@@ -167,7 +174,7 @@ describe('evidence drawer', () => {
           })
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await userEvent.click(
       await screen.findByRole('button', { name: '查看证据 EVI-1' }),
     );
@@ -186,7 +193,7 @@ describe('evidence drawer', () => {
         ? json({ detail: 'source unavailable' }, 404)
         : undefined,
     );
-    render(<App />);
+    renderPage();
     await userEvent.click(
       await screen.findByRole('button', { name: '查看证据 EVI-1' }),
     );
@@ -214,7 +221,7 @@ describe('evidence drawer', () => {
             : json([])
           : undefined,
     );
-    render(<App />);
+    renderPage();
     await userEvent.click(
       await screen.findByRole('button', { name: '查看证据 EVI-1' }),
     );

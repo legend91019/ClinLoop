@@ -72,6 +72,10 @@ class MockProvider:
 
     def analyze(self, context: AgentContext) -> AgentProposal:
         event = context.event
+        if event.payload.get("workspace_analysis") is True:
+            from apps.worker.worker.workspace_intent import demo_document_proposal
+
+            return demo_document_proposal(context)
         if event.event_type is EventType.NOTE_CREATED:
             return AgentProposal(
                 patient_id=event.patient_id,
