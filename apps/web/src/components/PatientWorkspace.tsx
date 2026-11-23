@@ -14,6 +14,7 @@ import type { PatientPage } from '../navigation';
 import { usePatientWorkflow } from '../hooks/usePatientWorkflow';
 import PatientRecords from './PatientRecords';
 import PatientAgentPanel from './PatientAgentPanel';
+import CareAssistancePanel from './CareAssistancePanel';
 import PatientTimeline from './PatientTimeline';
 import OpenLoopsPanel from './OpenLoopsPanel';
 import WorkflowGapsPanel from './WorkflowGapsPanel';
@@ -288,6 +289,12 @@ export default function PatientWorkspace({
       )}
       {profile && opened('patient-agent') && (
         <div hidden={page !== 'patient-agent'}>
+          <CareAssistancePanel
+            profile={profile}
+            actor={actor}
+            mode="PLAN"
+            active={page === 'patient-agent'}
+          />
           <PatientAgentPanel
             profile={profile}
             actor={actor}

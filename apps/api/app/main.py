@@ -28,6 +28,7 @@ from apps.api.app.dependencies import (
 from apps.api.app.routes import (
     agentarts_tools,
     audit,
+    care_assistance,
     events,
     evidence,
     handoff,
@@ -100,6 +101,7 @@ def create_app(*, event_publisher: EventPublisher | None = None) -> FastAPI:
         application.dependency_overrides[get_event_publisher] = lambda: event_publisher
 
     application.include_router(health.router)
+    application.include_router(care_assistance.router, prefix=settings.api_prefix)
     application.include_router(patient_workspace.router, prefix=settings.api_prefix)
     application.include_router(interviews.router, prefix=settings.api_prefix)
     application.include_router(workspace_agent.router, prefix=settings.api_prefix)

@@ -244,6 +244,9 @@ describe('patient page navigation', () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=records');
     render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /3 · 查房后/ }),
+    );
     await screen.findByRole('button', { name: /昨日查房草稿/ });
     await identify();
     await userEvent.click(screen.getByRole('button', { name: /昨日查房草稿/ }));
@@ -273,6 +276,9 @@ describe('patient page navigation', () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=records');
     render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /3 · 查房后/ }),
+    );
     await screen.findByRole('button', { name: /昨日查房草稿/ });
     await userEvent.click(screen.getByRole('button', { name: /昨日查房草稿/ }));
     fireEvent.change(screen.getByLabelText('记录正文'), {
@@ -321,6 +327,9 @@ describe('patient page navigation', () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=records');
     render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /3 · 查房后/ }),
+    );
     await screen.findByRole('button', { name: /昨日查房草稿/ });
     await userEvent.click(screen.getByRole('button', { name: /昨日查房草稿/ }));
     fireEvent.change(screen.getByLabelText('记录正文'), {

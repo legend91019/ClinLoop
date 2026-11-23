@@ -317,6 +317,20 @@ class AgentRunRow(TimestampMixin, JSONPayloadMixin, Base):
     )
 
 
+class CareAssistanceRow(TimestampMixin, JSONPayloadMixin, Base):
+    """Durable, encounter-scoped preparation, review and conditional plans."""
+
+    __tablename__ = "care_assistance"
+    run_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    patient_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    encounter_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    mode: Mapped[str] = mapped_column(String(16), nullable=False)
+    document_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="QUEUED")
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    __table_args__ = (Index("ix_care_assistance_scope", "patient_id", "encounter_id"),)
+
+
 class ReviewDecisionRow(TimestampMixin, JSONPayloadMixin, Base):
     """A clinician decision on a finding. Append-only."""
 

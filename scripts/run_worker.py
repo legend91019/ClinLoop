@@ -40,6 +40,12 @@ def main(argv: list[str] | None = None) -> int:
 
             with session_scope(engine) as session:
                 sync_round_reminders(session)
+                from apps.api.app.services.care_assistance_service import sync_plans
+
+                sync_plans(session)
+            from apps.worker.worker.care_assistant import process_care_queue
+
+            process_care_queue(engine)
             if mode == "database":
                 with session_scope(engine) as session:
                     runs = process_pending_database_events(session, agent, limit=args.count)

@@ -23,6 +23,43 @@ const profile: PatientProfile = {
 const actor = { actor_id: 'DR-TEST', role: 'PHYSICIAN' as const };
 
 describe('patient records workspace', () => {
+  it('guides round stages and preserves an unsaved draft when switching', async () => {
+    serve((r) =>
+      r.url.pathname.endsWith('/documents') || r.url.pathname.endsWith('/tasks')
+        ? json([])
+        : undefined,
+    );
+    render(
+      <PatientRecords
+        profile={profile}
+        actor={null}
+        page="records"
+        onChanged={vi.fn()}
+        onDirtyChange={vi.fn()}
+      />,
+    );
+    await screen.findByRole('heading', { name: '查房准备单' });
+    expect(
+      screen.queryByRole('button', { name: '保存草稿' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '开始本次查房' }));
+    expect(
+      screen.queryByRole('heading', { name: '查房准备单' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: '查看病历草稿与审核' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: '查房记录' }));
+    fireEvent.change(screen.getByLabelText('记录正文'), {
+      target: { value: '未保存的查房输入' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: /1 · 查房前/ }));
+    expect(
+      screen.queryByRole('textbox', { name: '记录正文' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /3 · 查房后/ }));
+    expect(screen.getByLabelText('记录正文')).toHaveValue('未保存的查房输入');
+  });
   it('saves an edited round note for this encounter, submits it and locks the text', async () => {
     let document: ClinicalDocument | undefined;
     const requests = serve((r) => {
@@ -145,8 +182,10 @@ describe('patient records workspace', () => {
       state: 'RESOLVED',
       reason: '已查看并核对报告来源',
     });
-    expect(requests.find((r) => r.method === 'POST')?.url.pathname).toContain(
-      '/P-2001/tasks',
-    );
+    expect(
+      requests.find(
+        (r) => r.method === 'POST' && r.url.pathname.endsWith('/tasks'),
+      )?.url.pathname,
+    ).toContain('/P-2001/tasks');
   });
 });
