@@ -11,6 +11,8 @@ import type {
 import { formatTime, label } from './shared';
 import InterviewComposer from './InterviewComposer';
 import FirstRoundReminder from './FirstRoundReminder';
+import CareAssistancePanel from './CareAssistancePanel';
+import RoundPreparationBrief from './RoundPreparationBrief';
 
 const kindLabels: Record<DocumentKind, string> = {
   ADMISSION: '入院病历',
@@ -58,6 +60,10 @@ export default function PatientRecords({
   const [message, setMessage] = useState('');
   const [revision, setRevision] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [roundStage, setRoundStage] = useState<'prepare' | 'record' | 'review'>(
+    'prepare',
+  );
+  const staged = page === 'records';
   const [current, setCurrent] = useState<ClinicalDocument | undefined>();
   const [kind, setKind] = useState<DocumentKind>('ROUND');
   const [title, setTitle] = useState('');
@@ -127,6 +133,7 @@ export default function PatientRecords({
     setContent(document?.content || template(newKind, profile));
     setDirty(false);
     setEditorOpen(true);
+    setRoundStage('review');
     setError('');
     setMessage('');
     setSignatureName('');
@@ -382,9 +389,12 @@ export default function PatientRecords({
             <h2 id="records-title">
               <FilePenLine size={20} /> 病历与查房记录
             </h2>
-            <p>填写并保存草稿；提交后保留原文，需要补充时新建病程记录。</p>
+            <p>按查房前准备、现场记录、查房后审核完成一次查房。</p>
           </div>
-          <div className="workspace-actions">
+          <div
+            className="workspace-actions"
+            hidden={staged && roundStage !== 'review'}
+          >
             <button
               className="button"
               disabled={busy}
@@ -413,7 +423,70 @@ export default function PatientRecords({
             )}
           </div>
         </div>
-        <div id="round-transcription">
+        {staged && (
+          <>
+            <nav className="round-stage-nav" aria-label="查房流程">
+              {(
+                [
+                  ['prepare', '1 · 查房前', '查看变化与待核实问题'],
+                  ['record', '2 · 查房中', '转录并保存原始对话'],
+                  ['review', '3 · 查房后', '核查病历、签署与确认任务'],
+                ] as const
+              ).map(([stage, title, text]) => (
+                <button
+                  type="button"
+                  key={stage}
+                  aria-current={roundStage === stage ? 'step' : undefined}
+                  onClick={() => setRoundStage(stage)}
+                >
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </button>
+              ))}
+            </nav>
+            <p className="round-stage-hint" role="status">
+              {roundStage === 'prepare'
+                ? '先看本次准备单，需要进一步核对时展开 Agent 分析。'
+                : roundStage === 'record'
+                  ? '记录医患原始对话并保存。病历生成后会自动进入查房后审核。'
+                  : '选择病历核对并签署，再确认后续任务。切换阶段会保留未保存的文字。'}
+            </p>
+          </>
+        )}
+        <div hidden={staged && roundStage !== 'prepare'}>
+          <RoundPreparationBrief
+            profile={profile}
+            active={
+              page === 'all' || (page === 'records' && roundStage === 'prepare')
+            }
+          />
+          <details className="round-agent-details">
+            <summary>
+              Agent 核实建议与分析 <span>查看分析结果、补充问题和来源</span>
+            </summary>
+            <CareAssistancePanel
+              profile={profile}
+              actor={actor}
+              mode="PREPARE"
+              active={
+                page === 'all' ||
+                (page === 'records' && roundStage === 'prepare')
+              }
+            />
+          </details>
+          {staged && (
+            <button
+              className="button primary"
+              onClick={() => setRoundStage('record')}
+            >
+              开始本次查房
+            </button>
+          )}
+        </div>
+        <div
+          id="round-transcription"
+          hidden={staged && roundStage !== 'record'}
+        >
           <InterviewComposer
             profile={profile}
             actor={actor}
@@ -432,8 +505,16 @@ export default function PatientRecords({
               setRevision((v) => v + 1);
             }}
           />
+          {staged && (
+            <button className="button" onClick={() => setRoundStage('review')}>
+              查看病历草稿与审核
+            </button>
+          )}
         </div>
-        <div className="documents-layout">
+        <div
+          className="documents-layout"
+          hidden={staged && roundStage !== 'review'}
+        >
           <div className="document-list">
             {loading ? (
               <p>正在加载记录…</p>
@@ -494,6 +575,20 @@ export default function PatientRecords({
                 <p className="panel-note">
                   这是本地文书格式演示，未调用真实模型。可在已保存对话中选择真实模型重新撰写。
                 </p>
+              )}
+              {current && (
+                <CareAssistancePanel
+                  key={current.document_id}
+                  profile={profile}
+                  actor={actor}
+                  mode="QUALITY"
+                  documentId={current.document_id}
+                  active={
+                    page === 'all' ||
+                    (page === 'records' && roundStage === 'review')
+                  }
+                  dirty={dirty}
+                />
               )}
               {current?.generation && (
                 <details className="source-dialogue">
@@ -685,6 +780,18 @@ export default function PatientRecords({
                 >
                   基于此记录创建任务
                 </button>
+              )}
+              {viewOnly && (
+                <CareAssistancePanel
+                  profile={profile}
+                  actor={actor}
+                  mode="PLAN"
+                  documentId={current.document_id}
+                  active={
+                    page === 'all' ||
+                    (page === 'records' && roundStage === 'review')
+                  }
+                />
               )}
             </form>
           ) : (

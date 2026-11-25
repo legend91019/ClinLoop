@@ -101,6 +101,61 @@ describe('patient page navigation', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('offers four distinct overview entries and groups task views in one center', async () => {
+    mockWorkspace();
+    window.history.replaceState(null, '', '/?patient=P-2001&view=overview');
+    render(<App />);
+    await screen.findByText('模拟患者1', { selector: 'dd' });
+    const entries = within(
+      screen.getByRole('navigation', { name: '患者功能' }),
+    ).getAllByRole('button');
+    expect(entries).toHaveLength(4);
+    for (const name of [
+      '病历与查房',
+      'Agent 任务中心',
+      '患者时间线',
+      '交接草稿',
+    ])
+      expect(entries.some((entry) => entry.textContent?.startsWith(name))).toBe(
+        true,
+      );
+    expect(
+      screen.queryByRole('button', { name: '查看任务' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByRole('navigation', { name: '患者功能' })).getByRole(
+        'button',
+        { name: /^Agent 任务中心/ },
+      ),
+    );
+    const center = screen.getByRole('navigation', { name: '任务中心导航' });
+    expect(within(center).getAllByRole('button')).toHaveLength(3);
+    await userEvent.click(
+      within(center).getByRole('button', { name: '医生待办' }),
+    );
+    expect(new URL(window.location.href).searchParams.get('view')).toBe(
+      'followups',
+    );
+    expect(
+      screen.getByRole('heading', { name: '患者跟进任务', level: 2 }),
+    ).toBeVisible();
+    expect(
+      within(
+        screen.getByRole('navigation', { name: '任务中心导航' }),
+      ).getByRole('button', { name: '医生待办' }),
+    ).toHaveAttribute('aria-current', 'page');
+    await userEvent.click(
+      within(
+        screen.getByRole('navigation', { name: '任务中心导航' }),
+      ).getByRole('button', { name: '提醒审核' }),
+    );
+    expect(new URL(window.location.href).searchParams.get('view')).toBe('gaps');
+    await userEvent.click(screen.getByRole('button', { name: '返回患者概览' }));
+    expect(screen.getByRole('navigation', { name: '患者功能' })).toBeVisible();
+    expect(new URL(window.location.href).searchParams.get('patient')).toBe(
+      'P-2001',
+    );
+  });
   it('keeps patient features inside the overview and provides an explicit return action', async () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=overview');
@@ -189,13 +244,16 @@ describe('patient page navigation', () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=records');
     render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /3 · 查房后/ }),
+    );
     await screen.findByRole('button', { name: /昨日查房草稿/ });
     await identify();
     await userEvent.click(screen.getByRole('button', { name: /昨日查房草稿/ }));
     fireEvent.change(screen.getByLabelText('记录正文'), {
       target: { value: '尚未保存的今天查房内容' },
     });
-    await go('患者 Agent 助手');
+    await go('Agent 任务中心');
     expect(
       await screen.findByRole('heading', { name: '这位患者的 Agent 助手' }),
     ).toBeVisible();
@@ -218,6 +276,9 @@ describe('patient page navigation', () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=records');
     render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /3 · 查房后/ }),
+    );
     await screen.findByRole('button', { name: /昨日查房草稿/ });
     await userEvent.click(screen.getByRole('button', { name: /昨日查房草稿/ }));
     fireEvent.change(screen.getByLabelText('记录正文'), {
@@ -266,6 +327,9 @@ describe('patient page navigation', () => {
     mockWorkspace();
     window.history.replaceState(null, '', '/?patient=P-2001&view=records');
     render(<App />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /3 · 查房后/ }),
+    );
     await screen.findByRole('button', { name: /昨日查房草稿/ });
     await userEvent.click(screen.getByRole('button', { name: /昨日查房草稿/ }));
     fireEvent.change(screen.getByLabelText('记录正文'), {

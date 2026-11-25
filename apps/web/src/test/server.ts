@@ -40,6 +40,31 @@ export function serve(handler?: Handler) {
       const overridden = await handler?.(request);
       if (overridden) return overridden;
       const path = request.url.pathname;
+      if (path.endsWith('/round-preparation'))
+        return json({
+          last_round_at: null,
+          new_labs: [],
+          open_tasks: [],
+          last_round: null,
+          limits: {},
+        });
+      if (path.endsWith('/care-assistance')) {
+        if (request.method === 'GET') return json([]);
+        return json(
+          {
+            run_id: 'CARE-TEST',
+            mode: request.body?.mode,
+            document_id: request.body?.document_id || null,
+            status: 'QUEUED',
+            revision: 1,
+            stale: false,
+            created_at: '2026-11-03T08:00:00Z',
+            trace: [],
+            history: [],
+          },
+          202,
+        );
+      }
       if (request.method === 'POST' && path.endsWith('/review'))
         return json({
           decision_id: 'REV-1',

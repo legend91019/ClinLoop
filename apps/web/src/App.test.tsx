@@ -34,9 +34,24 @@ async function navigate(name: string) {
       ),
     );
   }
-  await userEvent.click(
-    screen.getByRole('button', { name: new RegExp('^' + name) }),
-  );
+  const nested: Record<string, string> = {
+    未闭环任务: '任务状态明细',
+    流程缺口: '提醒审核',
+    'Agent 运行轨迹': 'Agent 运行轨迹',
+  };
+  if (nested[name]) {
+    await userEvent.click(
+      screen.getByRole('button', { name: /^Agent 任务中心/ }),
+    );
+    if (name !== '流程缺口')
+      await userEvent.click(
+        screen.getByText('更多记录与演示', { exact: true }),
+      );
+    await userEvent.click(screen.getByRole('button', { name: nested[name] }));
+  } else
+    await userEvent.click(
+      screen.getByRole('button', { name: new RegExp('^' + name) }),
+    );
 }
 
 describe('doctor workspace', () => {

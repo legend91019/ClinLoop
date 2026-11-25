@@ -436,6 +436,10 @@ def update_task(
     require_encounter(session, patient_id, row.encounter_id)
     if body.expected_state not in {"PLANNED", "IN_PROGRESS"}:
         raise HTTPException(409, "已结束的任务不能再次修改")
+    if body.state != "CANCELLED":
+        from apps.api.app.services.care_assistance_service import guard_task
+
+        guard_task(session, row)
     if body.state == body.expected_state:
         raise HTTPException(409, "任务已处于该状态")
     result = session.execute(

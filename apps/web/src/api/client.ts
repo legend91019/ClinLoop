@@ -46,7 +46,55 @@ function actorHeaders(actor: Clinician): Record<string, string> {
   return { 'X-Actor-Id': actor.actor_id.trim(), 'X-Actor-Role': actor.role };
 }
 
+import type { CareDecision, CareMode, CareRun } from './careTypes';
+
 export class ApiClient {
+  roundPreparation(patient: string, encounter: string, signal?: AbortSignal) {
+    return this.request<import('./careTypes').RoundPreparation>(
+      `/patients/${encodeURIComponent(patient)}/round-preparation?encounter_id=${encodeURIComponent(encounter)}`,
+      { signal },
+    );
+  }
+  careRuns(patient: string, encounter: string, signal?: AbortSignal) {
+    return this.request<CareRun[]>(
+      `/patients/${encodeURIComponent(patient)}/care-assistance?encounter_id=${encodeURIComponent(encounter)}`,
+      { signal },
+    );
+  }
+  requestCare(
+    patient: string,
+    body: {
+      encounter_id: string;
+      mode: CareMode;
+      document_id?: string;
+      clarification: string;
+    },
+    actor: Clinician,
+  ) {
+    return this.request<CareRun>(
+      `/patients/${encodeURIComponent(patient)}/care-assistance`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+  }
+  decideCare(
+    patient: string,
+    run: string,
+    body: CareDecision,
+    actor: Clinician,
+  ) {
+    return this.request<CareRun>(
+      `/patients/${encodeURIComponent(patient)}/care-assistance/${encodeURIComponent(run)}/decision`,
+      {
+        method: 'POST',
+        headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+  }
   clinicalWritingConfig(signal?: AbortSignal) {
     return this.request<{
       configured: boolean;

@@ -42,9 +42,9 @@ const navigation = [
   },
   {
     id: 'patient-agent',
-    title: '患者 Agent 助手',
+    title: 'Agent 任务中心',
     icon: GitBranch,
-    description: '审核 Agent 建议，核对结果与证据，持续跟进。',
+    description: '集中处理 Agent 建议、医生待办和需审核的提醒。',
   },
   {
     id: 'records',
